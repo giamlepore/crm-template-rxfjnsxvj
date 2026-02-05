@@ -1,3 +1,4 @@
+import React from 'react'
 import { Lead } from '@/context/LeadsContext'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,9 +14,6 @@ export function PipelineCard({ lead }: PipelineCardProps) {
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('leadId', lead.id)
     e.dataTransfer.effectAllowed = 'move'
-
-    // Create a custom drag image if needed, or use default
-    // e.dataTransfer.setDragImage(e.currentTarget, 0, 0);
   }
 
   const totalValue =
@@ -66,7 +64,10 @@ export function PipelineCard({ lead }: PipelineCardProps) {
           </Avatar>
           {totalValue > 0 && (
             <span className="text-xs font-mono font-medium text-green-600">
-              R$ {totalValue.toLocaleString('pt-BR', { notation: 'compact' })}
+              {new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              }).format(totalValue)}
             </span>
           )}
         </div>

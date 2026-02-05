@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Lead } from '@/context/LeadsContext'
 import { Badge } from '@/components/ui/badge'
 import { PipelineCard } from './PipelineCard'
@@ -26,6 +26,11 @@ export function PipelineColumn({
       lead.proposals?.reduce((sum, prop) => sum + (prop.valor || 0), 0) || 0
     return acc + leadTotal
   }, 0)
+
+  const formattedTotal = new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(totalValue)
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
@@ -70,11 +75,7 @@ export function PipelineColumn({
           </Badge>
         </div>
         <div className="text-xs font-mono text-muted-foreground font-medium">
-          Total: R${' '}
-          {totalValue.toLocaleString('pt-BR', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}
+          Total: {formattedTotal}
         </div>
       </div>
 

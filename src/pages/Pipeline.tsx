@@ -48,8 +48,6 @@ export default function Pipeline() {
   }
 
   const totalPipelineValue = leads.reduce((acc, lead) => {
-    // Only count active pipeline values (exclude lost/won if desired, but user story implies "total potential value in each stage" and headers display sums. Top badge usually shows total open pipeline.)
-    // Let's sum everything for the top badge for now, or maybe exclude 'Fechado Perdido'.
     if (lead.status === 'Fechado Perdido') return acc
     const leadTotal =
       lead.proposals?.reduce((sum, prop) => sum + (prop.valor || 0), 0) || 0
@@ -64,10 +62,12 @@ export default function Pipeline() {
         </h1>
         <div className="flex gap-2">
           <Badge variant="outline" className="text-sm py-1 px-3 bg-background">
-            Pipeline Ativo: R${' '}
-            {totalPipelineValue.toLocaleString('pt-BR', {
-              notation: 'compact',
-            })}
+            Pipeline Ativo:{' '}
+            {new Intl.NumberFormat('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+              maximumFractionDigits: 0,
+            }).format(totalPipelineValue)}
           </Badge>
         </div>
       </div>

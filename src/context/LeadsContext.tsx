@@ -17,7 +17,10 @@ export type LeadStatus =
   | 'Fechado Perdido'
 
 export interface Proposal {
+  id: string
+  title: string
   valor: number
+  status: string | null
 }
 
 export interface Lead {
@@ -56,7 +59,17 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('*, proposals(valor)')
+        .select(
+          `
+          *,
+          proposals (
+            id,
+            titulo,
+            valor,
+            status
+          )
+        `,
+        )
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -74,7 +87,13 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
           status: dbLead.status as LeadStatus,
           createdAt: dbLead.created_at,
           createdBy: dbLead.created_by || '',
-          proposals: dbLead.proposals || [],
+          proposals:
+            dbLead.proposals?.map((p: any) => ({
+              id: p.id,
+              title: p.titulo,
+              valor: p.valor || 0,
+              status: p.status,
+            })) || [],
         }))
         setLeads(mappedLeads)
       }
@@ -196,7 +215,6 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         .eq('id', id)
 
       if (error) {
-        // Revert on error
         fetchLeads()
         throw error
       }
