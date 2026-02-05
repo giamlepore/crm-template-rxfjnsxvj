@@ -112,7 +112,7 @@ export default function Leads() {
         </div>
         <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[140px] bg-background">
+            <SelectTrigger className="w-[180px] bg-background">
               <div className="flex items-center gap-2">
                 <Filter className="h-4 w-4" />
                 <SelectValue placeholder="Status" />
@@ -120,12 +120,12 @@ export default function Leads() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos Status</SelectItem>
-              <SelectItem value="Novo">Novo</SelectItem>
-              <SelectItem value="Em Contato">Em Contato</SelectItem>
-              <SelectItem value="Qualificado">Qualificado</SelectItem>
-              <SelectItem value="Negociacao">Negociação</SelectItem>
-              <SelectItem value="Fechado">Fechado</SelectItem>
-              <SelectItem value="Perdido">Perdido</SelectItem>
+              <SelectItem value="Novo Lead">Novo Lead</SelectItem>
+              <SelectItem value="Qualificação">Qualificação</SelectItem>
+              <SelectItem value="Proposta Enviada">Proposta Enviada</SelectItem>
+              <SelectItem value="Negociação">Negociação</SelectItem>
+              <SelectItem value="Fechado Ganho">Fechado Ganho</SelectItem>
+              <SelectItem value="Fechado Perdido">Fechado Perdido</SelectItem>
             </SelectContent>
           </Select>
 

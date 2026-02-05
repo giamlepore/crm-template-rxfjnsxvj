@@ -10,14 +10,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Lead } from '@/context/LeadsContext'
-import { useAuth } from '@/context/AuthContext'
 
 interface LeadsTableProps {
   leads: Lead[]
@@ -26,46 +26,54 @@ interface LeadsTableProps {
 }
 
 export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
-  const { user, role } = useAuth()
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Novo':
-        return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200'
-      case 'Em Contato':
-        return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200'
-      case 'Qualificado':
-        return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200'
-      case 'Negociacao':
-        return 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-purple-200'
-      case 'Fechado':
-        return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200'
-      case 'Perdido':
-        return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200'
+      case 'Novo Lead':
+        return (
+          <Badge className="bg-blue-500/15 text-blue-700 hover:bg-blue-500/25 border-blue-200">
+            Novo Lead
+          </Badge>
+        )
+      case 'Qualificação':
+        return (
+          <Badge className="bg-yellow-500/15 text-yellow-700 hover:bg-yellow-500/25 border-yellow-200">
+            Qualificação
+          </Badge>
+        )
+      case 'Proposta Enviada':
+        return (
+          <Badge className="bg-orange-500/15 text-orange-700 hover:bg-orange-500/25 border-orange-200">
+            Proposta Enviada
+          </Badge>
+        )
+      case 'Negociação':
+        return (
+          <Badge className="bg-purple-500/15 text-purple-700 hover:bg-purple-500/25 border-purple-200">
+            Negociação
+          </Badge>
+        )
+      case 'Fechado Ganho':
+        return (
+          <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/25 border-green-200">
+            Fechado Ganho
+          </Badge>
+        )
+      case 'Fechado Perdido':
+        return <Badge variant="secondary">Fechado Perdido</Badge>
       default:
-        return 'bg-gray-100 text-gray-700'
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
-  // Permission Logic:
-  // Vendedor can only edit/delete their own leads.
-  // Admins/Managers can edit/delete all.
-  const canEdit = (lead: Lead) => {
-    if (!user) return false
-    if (role === 'admin' || role === 'gerente') return true
-    return lead.createdBy === user.id
-  }
-
   return (
-    <div className="rounded-xl border glass-card overflow-hidden">
+    <div className="rounded-md border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Empresa</TableHead>
             <TableHead>Contato</TableHead>
-            <TableHead className="hidden md:table-cell">E-mail</TableHead>
-            <TableHead className="hidden lg:table-cell">Telefone</TableHead>
-            <TableHead className="hidden sm:table-cell">Segmento</TableHead>
+            <TableHead>Segmento</TableHead>
+            <TableHead>Email</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
@@ -73,72 +81,42 @@ export function LeadsTable({ leads, onEdit, onDelete }: LeadsTableProps) {
         <TableBody>
           {leads.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="h-24 text-center">
+              <TableCell colSpan={6} className="h-24 text-center">
                 Nenhum lead encontrado.
               </TableCell>
             </TableRow>
           ) : (
             leads.map((lead) => (
-              <TableRow
-                key={lead.id}
-                className="group hover:bg-muted/50 transition-colors"
-              >
+              <TableRow key={lead.id}>
                 <TableCell className="font-medium">{lead.company}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={`https://img.usecurling.com/ppl/thumbnail?gender=${Math.random() > 0.5 ? 'male' : 'female'}&seed=${lead.id}`}
-                      />
-                      <AvatarFallback>
-                        {lead.contactName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm">{lead.contactName}</span>
-                  </div>
+                <TableCell>{lead.contactName}</TableCell>
+                <TableCell>{lead.segment || '-'}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {lead.email || '-'}
                 </TableCell>
-                <TableCell className="hidden md:table-cell text-muted-foreground">
-                  {lead.email}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-muted-foreground">
-                  {lead.phone}
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  {lead.segment}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(lead.status)}
-                  >
-                    {lead.status}
-                  </Badge>
-                </TableCell>
+                <TableCell>{getStatusBadge(lead.status)}</TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Abrir menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+                      <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => onEdit(lead)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
                       </DropdownMenuItem>
-
-                      {canEdit(lead) && (
-                        <>
-                          <DropdownMenuItem onClick={() => onEdit(lead)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDelete(lead.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
-                        </>
-                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => onDelete(lead.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Excluir
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

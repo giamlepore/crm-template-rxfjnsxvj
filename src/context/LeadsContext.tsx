@@ -8,6 +8,18 @@ import React, {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 
+export type LeadStatus =
+  | 'Novo Lead'
+  | 'Qualificação'
+  | 'Proposta Enviada'
+  | 'Negociação'
+  | 'Fechado Ganho'
+  | 'Fechado Perdido'
+
+export interface Proposal {
+  valor: number
+}
+
 export interface Lead {
   id: string
   company: string
@@ -17,21 +29,16 @@ export interface Lead {
   segment: string
   size: string
   origin: string
-  status:
-    | 'Novo'
-    | 'Em Contato'
-    | 'Qualificado'
-    | 'Perdido'
-    | 'Negociacao'
-    | 'Fechado'
+  status: LeadStatus
   createdAt: string
   createdBy: string
+  proposals: Proposal[]
 }
 
 interface LeadsContextType {
   leads: Lead[]
   addLead: (
-    lead: Omit<Lead, 'id' | 'createdAt' | 'createdBy'>,
+    lead: Omit<Lead, 'id' | 'createdAt' | 'createdBy' | 'proposals'>,
   ) => Promise<boolean>
   updateLead: (id: string, updates: Partial<Lead>) => Promise<boolean>
   deleteLead: (id: string) => Promise<void>
@@ -49,7 +56,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     try {
       const { data, error } = await supabase
         .from('leads')
-        .select('*')
+        .select('*, proposals(valor)')
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -64,9 +71,10 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
           segment: dbLead.segmento || '',
           size: dbLead.tamanho || '',
           origin: dbLead.origem || '',
-          status: dbLead.status as any,
+          status: dbLead.status as LeadStatus,
           createdAt: dbLead.created_at,
           createdBy: dbLead.created_by || '',
+          proposals: dbLead.proposals || [],
         }))
         setLeads(mappedLeads)
       }
@@ -85,17 +93,12 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchLeads()
 
-    // Subscribe to realtime changes
     const channel = supabase
       .channel('public:leads')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'leads' },
         (payload) => {
-          // We can either fetch all or handle manually.
-          // For simplicity and correctness with sorts/filters, fetching is safer,
-          // but for "immediate" feel we also do optimistic updates in the functions below.
-          // We'll keep fetch here to ensure eventual consistency from other users.
           if (
             payload.eventType === 'INSERT' ||
             payload.eventType === 'UPDATE' ||
@@ -113,7 +116,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const addLead = async (
-    newLead: Omit<Lead, 'id' | 'createdAt' | 'createdBy'>,
+    newLead: Omit<Lead, 'id' | 'createdAt' | 'createdBy' | 'proposals'>,
   ) => {
     try {
       const {
@@ -140,7 +143,6 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error
 
-      // Optimistic/Immediate update
       if (data) {
         const mappedLead: Lead = {
           id: data.id,
@@ -151,9 +153,10 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
           segment: data.segmento || '',
           size: data.tamanho || '',
           origin: data.origem || '',
-          status: data.status as any,
+          status: data.status as LeadStatus,
           createdAt: data.created_at,
           createdBy: data.created_by || user?.id || '',
+          proposals: [],
         }
         setLeads((prev) => [mappedLead, ...prev])
         return true
@@ -172,6 +175,11 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
 
   const updateLead = async (id: string, updates: Partial<Lead>) => {
     try {
+      // Optimistic update
+      setLeads((prev) =>
+        prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
+      )
+
       const dbUpdates: any = {}
       if (updates.company) dbUpdates.empresa = updates.company
       if (updates.contactName) dbUpdates.contato = updates.contactName
@@ -182,23 +190,18 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
       if (updates.origin) dbUpdates.origem = updates.origin
       if (updates.status) dbUpdates.status = updates.status
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('leads')
         .update(dbUpdates)
         .eq('id', id)
-        .select()
-        .single()
 
-      if (error) throw error
-
-      // Immediate update in state
-      if (data) {
-        setLeads((prev) =>
-          prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
-        )
-        return true
+      if (error) {
+        // Revert on error
+        fetchLeads()
+        throw error
       }
-      return false
+
+      return true
     } catch (error: any) {
       console.error('Error updating lead:', error)
       toast({
@@ -212,11 +215,14 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteLead = async (id: string) => {
     try {
+      setLeads((prev) => prev.filter((lead) => lead.id !== id))
+
       const { error } = await supabase.from('leads').delete().eq('id', id)
 
-      if (error) throw error
-
-      setLeads((prev) => prev.filter((lead) => lead.id !== id))
+      if (error) {
+        fetchLeads()
+        throw error
+      }
     } catch (error: any) {
       console.error('Error deleting lead:', error)
       toast({

@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Lead } from '@/context/LeadsContext'
+import * as z from 'zod'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +18,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -27,32 +26,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Button } from '@/components/ui/button'
+import { useEffect } from 'react'
+import { Lead } from '@/context/LeadsContext'
 
-const formSchema = z.object({
-  company: z.string().min(2, 'Nome da empresa é obrigatório'),
+const leadSchema = z.object({
+  company: z.string().min(2, 'Empresa é obrigatória'),
   contactName: z.string().min(2, 'Nome do contato é obrigatório'),
-  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
-  phone: z.string().min(1, 'Telefone é obrigatório'),
-  segment: z.string().min(1, 'Segmento é obrigatório'),
-  size: z.string().min(1, 'Tamanho é obrigatório'),
-  origin: z.string().min(1, 'Origem é obrigatória'),
+  email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  segment: z.string().optional(),
+  size: z.string().optional(),
+  origin: z.string().optional(),
   status: z.enum([
-    'Novo',
-    'Em Contato',
-    'Qualificado',
-    'Perdido',
-    'Negociacao',
-    'Fechado',
+    'Novo Lead',
+    'Qualificação',
+    'Proposta Enviada',
+    'Negociação',
+    'Fechado Ganho',
+    'Fechado Perdido',
   ]),
 })
 
-export type LeadFormValues = z.infer<typeof formSchema>
+export type LeadFormValues = z.infer<typeof leadSchema>
 
 interface LeadFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (values: LeadFormValues) => Promise<void>
+  onSubmit: (values: LeadFormValues) => void
   initialData?: Lead | null
 }
 
@@ -63,7 +63,7 @@ export function LeadFormDialog({
   initialData,
 }: LeadFormDialogProps) {
   const form = useForm<LeadFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(leadSchema),
     defaultValues: {
       company: '',
       contactName: '',
@@ -72,62 +72,56 @@ export function LeadFormDialog({
       segment: '',
       size: '',
       origin: '',
-      status: 'Novo',
+      status: 'Novo Lead',
     },
   })
 
-  // Reset form when initialData changes or dialog opens
   useEffect(() => {
-    if (open) {
-      if (initialData) {
-        form.reset({
-          company: initialData.company,
-          contactName: initialData.contactName,
-          email: initialData.email,
-          phone: initialData.phone,
-          segment: initialData.segment,
-          size: initialData.size,
-          origin: initialData.origin,
-          status: initialData.status,
-        })
-      } else {
-        form.reset({
-          company: '',
-          contactName: '',
-          email: '',
-          phone: '',
-          segment: '',
-          size: '',
-          origin: '',
-          status: 'Novo',
-        })
-      }
+    if (initialData) {
+      form.reset({
+        company: initialData.company,
+        contactName: initialData.contactName,
+        email: initialData.email,
+        phone: initialData.phone,
+        segment: initialData.segment,
+        size: initialData.size,
+        origin: initialData.origin,
+        status: initialData.status,
+      })
+    } else {
+      form.reset({
+        company: '',
+        contactName: '',
+        email: '',
+        phone: '',
+        segment: '',
+        size: '',
+        origin: '',
+        status: 'Novo Lead',
+      })
     }
-  }, [open, initialData, form])
+  }, [initialData, form, open])
 
-  const handleSubmit = async (values: LeadFormValues) => {
-    await onSubmit(values)
-    // Don't reset here, the parent will close the dialog which triggers the useEffect
+  const handleSubmit = (values: LeadFormValues) => {
+    onSubmit(values)
+    // Don't reset here, let the parent close handle it
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] glass-card max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {initialData ? 'Editar Lead' : 'Cadastrar Novo Lead'}
-          </DialogTitle>
+          <DialogTitle>{initialData ? 'Editar Lead' : 'Novo Lead'}</DialogTitle>
           <DialogDescription>
             {initialData
               ? 'Atualize as informações do lead abaixo.'
               : 'Preencha as informações para adicionar um novo lead.'}
           </DialogDescription>
         </DialogHeader>
-
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="space-y-4 py-4"
+            className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -137,7 +131,7 @@ export function LeadFormDialog({
                   <FormItem>
                     <FormLabel>Empresa</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome da Empresa" {...field} />
+                      <Input placeholder="Tech Solutions" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -148,9 +142,9 @@ export function LeadFormDialog({
                 name="contactName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contato Principal</FormLabel>
+                    <FormLabel>Contato</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome do Contato" {...field} />
+                      <Input placeholder="João Silva" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -164,9 +158,9 @@ export function LeadFormDialog({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>E-mail</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="exemplo@email.com" {...field} />
+                      <Input placeholder="joao@empresa.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -179,7 +173,7 @@ export function LeadFormDialog({
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                      <Input placeholder="(00) 00000-0000" {...field} />
+                      <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -197,7 +191,6 @@ export function LeadFormDialog({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -211,73 +204,13 @@ export function LeadFormDialog({
                         <SelectItem value="Saúde">Saúde</SelectItem>
                         <SelectItem value="Educação">Educação</SelectItem>
                         <SelectItem value="Financeiro">Financeiro</SelectItem>
-                        <SelectItem value="Outros">Outros</SelectItem>
+                        <SelectItem value="Outro">Outro</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="size"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tamanho</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="1-10">1-10</SelectItem>
-                        <SelectItem value="11-50">11-50</SelectItem>
-                        <SelectItem value="51-200">51-200</SelectItem>
-                        <SelectItem value="201-500">201-500</SelectItem>
-                        <SelectItem value="500+">500+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="origin"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Origem</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Site">Site</SelectItem>
-                        <SelectItem value="Indicação">Indicação</SelectItem>
-                        <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                        <SelectItem value="Evento">Evento</SelectItem>
-                        <SelectItem value="Outros">Outros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="status"
@@ -287,7 +220,6 @@ export function LeadFormDialog({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -295,12 +227,20 @@ export function LeadFormDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="Novo">Novo</SelectItem>
-                        <SelectItem value="Em Contato">Em Contato</SelectItem>
-                        <SelectItem value="Qualificado">Qualificado</SelectItem>
-                        <SelectItem value="Negociacao">Negociação</SelectItem>
-                        <SelectItem value="Fechado">Fechado</SelectItem>
-                        <SelectItem value="Perdido">Perdido</SelectItem>
+                        <SelectItem value="Novo Lead">Novo Lead</SelectItem>
+                        <SelectItem value="Qualificação">
+                          Qualificação
+                        </SelectItem>
+                        <SelectItem value="Proposta Enviada">
+                          Proposta Enviada
+                        </SelectItem>
+                        <SelectItem value="Negociação">Negociação</SelectItem>
+                        <SelectItem value="Fechado Ganho">
+                          Fechado Ganho
+                        </SelectItem>
+                        <SelectItem value="Fechado Perdido">
+                          Fechado Perdido
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -317,9 +257,7 @@ export function LeadFormDialog({
               >
                 Cancelar
               </Button>
-              <Button type="submit">
-                {initialData ? 'Salvar Alterações' : 'Salvar Lead'}
-              </Button>
+              <Button type="submit">Salvar</Button>
             </DialogFooter>
           </form>
         </Form>
