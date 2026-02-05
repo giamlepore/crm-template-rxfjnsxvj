@@ -14,15 +14,21 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, Search, MoreHorizontal, Pencil, ShieldAlert } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Pencil,
+  User as UserIcon,
+} from 'lucide-react'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import {
   Card,
@@ -31,6 +37,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Users() {
   const { role, user: currentUser } = useAuth()
@@ -43,8 +50,8 @@ export default function Users() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
 
+  // Protect the route
   useEffect(() => {
-    // Protected Admin Route
     if (role && role !== 'admin') {
       toast({
         title: 'Acesso Negado',
@@ -61,9 +68,11 @@ export default function Users() {
       const data = await usersService.getUsers()
       setUsers(data)
     } catch (error: any) {
+      console.error(error)
       toast({
         title: 'Erro ao carregar usuários',
-        description: error.message,
+        description:
+          'Não foi possível buscar a lista de usuários. Verifique suas permissões.',
         variant: 'destructive',
       })
     } finally {
@@ -178,7 +187,7 @@ export default function Users() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
+                <TableHead>Usuário</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Função</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -186,11 +195,27 @@ export default function Users() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">
-                    Carregando...
-                  </TableCell>
-                </TableRow>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center space-x-4">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[150px]" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-[200px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-5 w-[80px]" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-8 ml-auto" />
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -203,13 +228,31 @@ export default function Users() {
               ) : (
                 filteredUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">
-                      {user.name || 'Sem nome'}
-                      {user.id === currentUser?.id && (
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          (Você)
-                        </span>
-                      )}
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9 border">
+                          <AvatarImage
+                            src={`https://img.usecurling.com/ppl/thumbnail?gender=${Math.random() > 0.5 ? 'male' : 'female'}&seed=${user.id}`}
+                          />
+                          <AvatarFallback className="bg-primary/10">
+                            {user.name ? (
+                              user.name.substring(0, 2).toUpperCase()
+                            ) : (
+                              <UserIcon className="h-4 w-4" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {user.name || 'Sem nome'}
+                          </span>
+                          {user.id === currentUser?.id && (
+                            <span className="text-[10px] text-muted-foreground">
+                              (Você)
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{getRoleBadge(user.role)}</TableCell>

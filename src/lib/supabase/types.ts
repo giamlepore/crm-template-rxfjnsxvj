@@ -211,15 +211,21 @@ export type Database = {
       }
       users: {
         Row: {
+          email: string | null
           id: string
+          name: string | null
           role: string
         }
         Insert: {
+          email?: string | null
           id: string
+          name?: string | null
           role?: string
         }
         Update: {
+          email?: string | null
           id?: string
+          name?: string | null
           role?: string
         }
         Relationships: []

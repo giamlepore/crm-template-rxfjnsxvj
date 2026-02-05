@@ -45,13 +45,6 @@ export const usersService = {
   },
 
   async deleteUser(id: string) {
-    // Note: Deleting from public.users doesn't delete from auth.users.
-    // Usually admin delete requires edge function too for full cleanup.
-    // For this scope, we allow deleting the profile reference which might cascade or leave auth orphan.
-    // Given the constraints, we will just delete the public profile which is what the policy allows.
-    // Ideally we would need an edge function 'delete-user' to call admin.deleteUser.
-    // We will stick to public.users deletion for permission management.
-
     const { error } = await supabase.from('users').delete().eq('id', id)
 
     if (error) throw error
