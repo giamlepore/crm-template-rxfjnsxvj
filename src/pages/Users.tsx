@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   Pencil,
   User as UserIcon,
+  Trash2,
 } from 'lucide-react'
 import { UserFormDialog } from '@/components/users/UserFormDialog'
 import {
@@ -38,6 +39,16 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export default function Users() {
   const { role, user: currentUser } = useAuth()
@@ -49,6 +60,10 @@ export default function Users() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null)
 
   // Protect the route
   useEffect(() => {
@@ -96,6 +111,35 @@ export default function Users() {
     setIsDialogOpen(true)
   }
 
+  const confirmDelete = (user: UserProfile) => {
+    setUserToDelete(user)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!userToDelete) return
+
+    try {
+      await usersService.deleteUser(userToDelete.id)
+      toast({
+        title: 'Usuário excluído',
+        description: 'O usuário foi removido com sucesso.',
+      })
+      fetchUsers()
+    } catch (error: any) {
+      console.error(error)
+      toast({
+        title: 'Erro ao excluir',
+        description:
+          error.message || 'Ocorreu um erro ao tentar excluir o usuário.',
+        variant: 'destructive',
+      })
+    } finally {
+      setDeleteDialogOpen(false)
+      setUserToDelete(null)
+    }
+  }
+
   const handleFormSubmit = async (values: any) => {
     try {
       if (editingUser) {
@@ -138,6 +182,12 @@ export default function Users() {
       default:
         return <Badge className="bg-blue-500 hover:bg-blue-600">Vendedor</Badge>
     }
+  }
+
+  // Helper to get deterministic gender for avatar
+  const getGender = (id: string) => {
+    const charCode = id.charCodeAt(id.length - 1)
+    return charCode % 2 === 0 ? 'male' : 'female'
   }
 
   const filteredUsers = users.filter(
@@ -232,7 +282,7 @@ export default function Users() {
                       <div className="flex items-center gap-3">
                         <Avatar className="h-9 w-9 border">
                           <AvatarImage
-                            src={`https://img.usecurling.com/ppl/thumbnail?gender=${Math.random() > 0.5 ? 'male' : 'female'}&seed=${user.id}`}
+                            src={`https://img.usecurling.com/ppl/thumbnail?gender=${getGender(user.id)}&seed=${user.id}`}
                           />
                           <AvatarFallback className="bg-primary/10">
                             {user.name ? (
@@ -270,6 +320,13 @@ export default function Users() {
                             <Pencil className="mr-2 h-4 w-4" />
                             Editar Permissões
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => confirmDelete(user)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Excluir Usuário
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -287,6 +344,29 @@ export default function Users() {
         onSubmit={handleFormSubmit}
         initialData={editingUser}
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o
+              usuário
+              <b> {userToDelete?.name || userToDelete?.email}</b> e removerá
+              seus dados do servidor.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
