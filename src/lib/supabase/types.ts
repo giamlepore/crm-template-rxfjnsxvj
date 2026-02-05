@@ -111,28 +111,40 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          descricao: string | null
           id: string
+          itens: Json | null
           lead_id: string | null
+          observacoes: string | null
           status: string | null
           titulo: string
+          validade: string | null
           valor: number | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          descricao?: string | null
           id?: string
+          itens?: Json | null
           lead_id?: string | null
+          observacoes?: string | null
           status?: string | null
           titulo: string
+          validade?: string | null
           valor?: number | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          descricao?: string | null
           id?: string
+          itens?: Json | null
           lead_id?: string | null
+          observacoes?: string | null
           status?: string | null
           titulo?: string
+          validade?: string | null
           valor?: number | null
         }
         Relationships: [

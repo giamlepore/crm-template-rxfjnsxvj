@@ -16,6 +16,7 @@ import {
   LeadFormValues,
 } from '@/components/leads/LeadFormDialog'
 import { LeadsTable } from '@/components/leads/LeadsTable'
+import { LeadInteractionsSheet } from '@/components/leads/LeadInteractionsSheet'
 
 export default function Leads() {
   const { leads, addLead, updateLead, deleteLead } = useLeads()
@@ -30,6 +31,10 @@ export default function Leads() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingLead, setEditingLead] = useState<Lead | null>(null)
 
+  // Interaction History State
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
+  const [viewingLead, setViewingLead] = useState<Lead | null>(null)
+
   const handleCreate = () => {
     setEditingLead(null)
     setIsDialogOpen(true)
@@ -38,6 +43,11 @@ export default function Leads() {
   const handleEdit = (lead: Lead) => {
     setEditingLead(lead)
     setIsDialogOpen(true)
+  }
+
+  const handleViewHistory = (lead: Lead) => {
+    setViewingLead(lead)
+    setIsHistoryOpen(true)
   }
 
   const handleDelete = async (id: string) => {
@@ -150,6 +160,7 @@ export default function Leads() {
         leads={filteredLeads}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onViewHistory={handleViewHistory}
       />
 
       <LeadFormDialog
@@ -157,6 +168,12 @@ export default function Leads() {
         onOpenChange={setIsDialogOpen}
         onSubmit={handleFormSubmit}
         initialData={editingLead}
+      />
+
+      <LeadInteractionsSheet
+        lead={viewingLead}
+        open={isHistoryOpen}
+        onOpenChange={setIsHistoryOpen}
       />
     </div>
   )
