@@ -12,7 +12,6 @@ import {
   Plus,
   Search,
   Filter,
-  AlertCircle,
   CalendarIcon,
   User,
 } from 'lucide-react'
@@ -47,7 +46,7 @@ import { TaskForm } from '@/components/tasks/TaskForm'
 import { Checkbox } from '@/components/ui/checkbox'
 
 export default function Activities() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const { leads } = useLeads()
   const { toast } = useToast()
 
@@ -65,7 +64,10 @@ export default function Activities() {
     if (!user) return
     setLoading(true)
     try {
-      const data = await tasksService.getTasks(user.id)
+      // If Vendedor, filter by their ID. If Admin/Gerente, fetch all (undefined).
+      const userIdToFilter = role === 'vendedor' ? user.id : undefined
+
+      const data = await tasksService.getTasks(userIdToFilter)
       setTasks(data || [])
     } catch (error: any) {
       toast({
@@ -80,7 +82,7 @@ export default function Activities() {
 
   useEffect(() => {
     fetchTasks()
-  }, [user])
+  }, [user, role])
 
   const handleCreateTask = async (taskData: any) => {
     try {

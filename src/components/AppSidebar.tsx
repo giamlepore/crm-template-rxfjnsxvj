@@ -21,13 +21,16 @@ import {
   Settings,
   Moon,
   Sun,
+  ShieldCheck,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
 
 export function AppSidebar() {
   const location = useLocation()
+  const { role } = useAuth()
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
@@ -47,13 +50,53 @@ export function AppSidebar() {
   }
 
   const menuItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
-    { icon: Users, label: 'Leads', path: '/leads' },
-    { icon: KanbanSquare, label: 'Pipeline', path: '/pipeline' },
-    { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
-    { icon: FileText, label: 'Propostas', path: '/proposals' },
-    { icon: BarChart3, label: 'Relatórios', path: '/reports' },
+    {
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      path: '/',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: Users,
+      label: 'Leads',
+      path: '/leads',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: KanbanSquare,
+      label: 'Pipeline',
+      path: '/pipeline',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: CheckSquare,
+      label: 'Tarefas',
+      path: '/tasks',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: FileText,
+      label: 'Propostas',
+      path: '/proposals',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: BarChart3,
+      label: 'Relatórios',
+      path: '/reports',
+      roles: ['admin', 'gerente'],
+    },
   ]
+
+  // Add Users Management link only for Admins
+  if (role === 'admin') {
+    menuItems.push({
+      icon: ShieldCheck,
+      label: 'Usuários',
+      path: '/users',
+      roles: ['admin'],
+    })
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -72,24 +115,28 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.path}
-                    tooltip={item.label}
-                    className="h-10 my-1"
-                  >
-                    <Link to={item.path}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                      {location.pathname === item.path && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-r-full" />
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems
+                .filter(
+                  (item) => !item.roles || (role && item.roles.includes(role)),
+                )
+                .map((item) => (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.path}
+                      tooltip={item.label}
+                      className="h-10 my-1"
+                    >
+                      <Link to={item.path}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                        {location.pathname === item.path && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-accent rounded-r-full" />
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
