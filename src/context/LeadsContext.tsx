@@ -17,15 +17,24 @@ export interface Lead {
   segment: string
   size: string
   origin: string
-  status: 'Novo' | 'Em Contato' | 'Qualificado' | 'Perdido'
+  status:
+    | 'Novo'
+    | 'Em Contato'
+    | 'Qualificado'
+    | 'Perdido'
+    | 'Negociacao'
+    | 'Fechado'
   createdAt: string
+  createdBy: string
 }
 
 interface LeadsContextType {
   leads: Lead[]
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void
-  updateLead: (id: string, updates: Partial<Lead>) => void
-  deleteLead: (id: string) => void
+  addLead: (
+    lead: Omit<Lead, 'id' | 'createdAt' | 'createdBy'>,
+  ) => Promise<boolean>
+  updateLead: (id: string, updates: Partial<Lead>) => Promise<boolean>
+  deleteLead: (id: string) => Promise<void>
   loading: boolean
 }
 
@@ -38,7 +47,6 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchLeads = async () => {
     try {
-      setLoading(true)
       const { data, error } = await supabase
         .from('leads')
         .select('*')
@@ -58,6 +66,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
           origin: dbLead.origem || '',
           status: dbLead.status as any,
           createdAt: dbLead.created_at,
+          createdBy: dbLead.created_by || '',
         }))
         setLeads(mappedLeads)
       }
@@ -82,8 +91,18 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'leads' },
-        () => {
-          fetchLeads()
+        (payload) => {
+          // We can either fetch all or handle manually.
+          // For simplicity and correctness with sorts/filters, fetching is safer,
+          // but for "immediate" feel we also do optimistic updates in the functions below.
+          // We'll keep fetch here to ensure eventual consistency from other users.
+          if (
+            payload.eventType === 'INSERT' ||
+            payload.eventType === 'UPDATE' ||
+            payload.eventType === 'DELETE'
+          ) {
+            fetchLeads()
+          }
         },
       )
       .subscribe()
@@ -93,8 +112,14 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [])
 
-  const addLead = async (newLead: Omit<Lead, 'id' | 'createdAt'>) => {
+  const addLead = async (
+    newLead: Omit<Lead, 'id' | 'createdAt' | 'createdBy'>,
+  ) => {
     try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
       const dbLead = {
         empresa: newLead.company,
         contato: newLead.contactName,
@@ -104,12 +129,36 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         tamanho: newLead.size,
         origem: newLead.origin,
         status: newLead.status,
+        created_by: user?.id,
       }
 
-      const { error } = await supabase.from('leads').insert([dbLead])
+      const { data, error } = await supabase
+        .from('leads')
+        .insert([dbLead])
+        .select()
+        .single()
 
       if (error) throw error
-      // Realtime subscription will handle the state update
+
+      // Optimistic/Immediate update
+      if (data) {
+        const mappedLead: Lead = {
+          id: data.id,
+          company: data.empresa,
+          contactName: data.contato,
+          email: data.email || '',
+          phone: data.telefone || '',
+          segment: data.segmento || '',
+          size: data.tamanho || '',
+          origin: data.origem || '',
+          status: data.status as any,
+          createdAt: data.created_at,
+          createdBy: data.created_by || user?.id || '',
+        }
+        setLeads((prev) => [mappedLead, ...prev])
+        return true
+      }
+      return false
     } catch (error: any) {
       console.error('Error adding lead:', error)
       toast({
@@ -117,6 +166,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: 'destructive',
       })
+      return false
     }
   }
 
@@ -132,12 +182,23 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
       if (updates.origin) dbUpdates.origem = updates.origin
       if (updates.status) dbUpdates.status = updates.status
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('leads')
         .update(dbUpdates)
         .eq('id', id)
+        .select()
+        .single()
 
       if (error) throw error
+
+      // Immediate update in state
+      if (data) {
+        setLeads((prev) =>
+          prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
+        )
+        return true
+      }
+      return false
     } catch (error: any) {
       console.error('Error updating lead:', error)
       toast({
@@ -145,6 +206,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: 'destructive',
       })
+      return false
     }
   }
 
@@ -153,6 +215,8 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.from('leads').delete().eq('id', id)
 
       if (error) throw error
+
+      setLeads((prev) => prev.filter((lead) => lead.id !== id))
     } catch (error: any) {
       console.error('Error deleting lead:', error)
       toast({

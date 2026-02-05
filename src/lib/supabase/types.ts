@@ -15,13 +15,209 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      interactions: {
+        Row: {
+          data: string
+          descricao: string | null
+          id: string
+          lead_id: string | null
+          tipo: string
+          user_id: string | null
+        }
+        Insert: {
+          data?: string
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          tipo: string
+          user_id?: string | null
+        }
+        Update: {
+          data?: string
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          tipo?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'interactions_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'interactions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          contato: string
+          created_at: string
+          created_by: string | null
+          email: string | null
+          empresa: string
+          id: string
+          origem: string | null
+          segmento: string | null
+          status: string
+          tamanho: string | null
+          telefone: string | null
+        }
+        Insert: {
+          contato: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          empresa: string
+          id?: string
+          origem?: string | null
+          segmento?: string | null
+          status?: string
+          tamanho?: string | null
+          telefone?: string | null
+        }
+        Update: {
+          contato?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          empresa?: string
+          id?: string
+          origem?: string | null
+          segmento?: string | null
+          status?: string
+          tamanho?: string | null
+          telefone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'leads_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      proposals: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string | null
+          status: string | null
+          titulo: string
+          valor: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string | null
+          status?: string | null
+          titulo: string
+          valor?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string | null
+          status?: string | null
+          titulo?: string
+          valor?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'proposals_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'proposals_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          descricao: string | null
+          id: string
+          lead_id: string | null
+          prazo: string | null
+          status: string | null
+          titulo: string
+          user_id: string | null
+        }
+        Insert: {
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          prazo?: string | null
+          status?: string | null
+          titulo: string
+          user_id?: string | null
+        }
+        Update: {
+          descricao?: string | null
+          id?: string
+          lead_id?: string | null
+          prazo?: string | null
+          status?: string | null
+          titulo?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'tasks_lead_id_fkey'
+            columns: ['lead_id']
+            isOneToOne: false
+            referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      users: {
+        Row: {
+          id: string
+          role: string
+        }
+        Insert: {
+          id: string
+          role?: string
+        }
+        Update: {
+          id?: string
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_or_manager: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
