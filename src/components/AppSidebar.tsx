@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   Users,
   KanbanSquare,
-  CalendarDays,
   CheckSquare,
   FileText,
   BarChart3,
@@ -26,7 +25,6 @@ import {
 import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
 
 export function AppSidebar() {
   const location = useLocation()
@@ -52,7 +50,6 @@ export function AppSidebar() {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
     { icon: Users, label: 'Leads', path: '/leads' },
     { icon: KanbanSquare, label: 'Pipeline', path: '/pipeline' },
-    { icon: CalendarDays, label: 'Atividades', path: '/activities' },
     { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
     { icon: FileText, label: 'Propostas', path: '/proposals' },
     { icon: BarChart3, label: 'Relatórios', path: '/reports' },
