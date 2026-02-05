@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 export interface Lead {
   id: string
@@ -18,97 +26,147 @@ interface LeadsContextType {
   addLead: (lead: Omit<Lead, 'id' | 'createdAt'>) => void
   updateLead: (id: string, updates: Partial<Lead>) => void
   deleteLead: (id: string) => void
+  loading: boolean
 }
 
 const LeadsContext = createContext<LeadsContextType | undefined>(undefined)
 
-const initialLeads: Lead[] = [
-  {
-    id: '1',
-    company: 'TechSolutions Ltda',
-    contactName: 'Carlos Silva',
-    email: 'carlos@techsolutions.com',
-    phone: '(11) 98765-4321',
-    segment: 'Tecnologia',
-    size: '51-200',
-    origin: 'LinkedIn',
-    status: 'Qualificado',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    company: 'Varejo Express',
-    contactName: 'Ana Souza',
-    email: 'ana@varejoexpress.com.br',
-    phone: '(21) 99876-5432',
-    segment: 'Varejo',
-    size: '201-500',
-    origin: 'Site',
-    status: 'Novo',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    company: 'Indústrias Metal',
-    contactName: 'Roberto Lima',
-    email: 'roberto@indmetal.com',
-    phone: '(31) 91234-5678',
-    segment: 'Indústria',
-    size: '500+',
-    origin: 'Indicação',
-    status: 'Em Contato',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    company: 'Educa Mais',
-    contactName: 'Fernanda Oliveira',
-    email: 'fernanda@educamais.edu',
-    phone: '(41) 95555-4444',
-    segment: 'Educação',
-    size: '11-50',
-    origin: 'Evento',
-    status: 'Perdido',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    company: 'Finanças Seguras',
-    contactName: 'João Mendes',
-    email: 'joao@financas.com',
-    phone: '(11) 93333-2222',
-    segment: 'Financeiro',
-    size: '1-10',
-    origin: 'Site',
-    status: 'Novo',
-    createdAt: new Date().toISOString(),
-  },
-]
-
 export const LeadsProvider = ({ children }: { children: ReactNode }) => {
-  const [leads, setLeads] = useState<Lead[]>(initialLeads)
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
-  const addLead = (newLead: Omit<Lead, 'id' | 'createdAt'>) => {
-    const lead: Lead = {
-      ...newLead,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
+  const fetchLeads = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      if (data) {
+        const mappedLeads: Lead[] = data.map((dbLead: any) => ({
+          id: dbLead.id,
+          company: dbLead.empresa,
+          contactName: dbLead.contato,
+          email: dbLead.email || '',
+          phone: dbLead.telefone || '',
+          segment: dbLead.segmento || '',
+          size: dbLead.tamanho || '',
+          origin: dbLead.origem || '',
+          status: dbLead.status as any,
+          createdAt: dbLead.created_at,
+        }))
+        setLeads(mappedLeads)
+      }
+    } catch (error: any) {
+      console.error('Error fetching leads:', error)
+      toast({
+        title: 'Erro ao carregar leads',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
     }
-    setLeads((prev) => [lead, ...prev])
   }
 
-  const updateLead = (id: string, updates: Partial<Lead>) => {
-    setLeads((prev) =>
-      prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
-    )
+  useEffect(() => {
+    fetchLeads()
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('public:leads')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        () => {
+          fetchLeads()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const addLead = async (newLead: Omit<Lead, 'id' | 'createdAt'>) => {
+    try {
+      const dbLead = {
+        empresa: newLead.company,
+        contato: newLead.contactName,
+        email: newLead.email,
+        telefone: newLead.phone,
+        segmento: newLead.segment,
+        tamanho: newLead.size,
+        origem: newLead.origin,
+        status: newLead.status,
+      }
+
+      const { error } = await supabase.from('leads').insert([dbLead])
+
+      if (error) throw error
+      // Realtime subscription will handle the state update
+    } catch (error: any) {
+      console.error('Error adding lead:', error)
+      toast({
+        title: 'Erro ao adicionar lead',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
   }
 
-  const deleteLead = (id: string) => {
-    setLeads((prev) => prev.filter((lead) => lead.id !== id))
+  const updateLead = async (id: string, updates: Partial<Lead>) => {
+    try {
+      const dbUpdates: any = {}
+      if (updates.company) dbUpdates.empresa = updates.company
+      if (updates.contactName) dbUpdates.contato = updates.contactName
+      if (updates.email) dbUpdates.email = updates.email
+      if (updates.phone) dbUpdates.telefone = updates.phone
+      if (updates.segment) dbUpdates.segmento = updates.segment
+      if (updates.size) dbUpdates.tamanho = updates.size
+      if (updates.origin) dbUpdates.origem = updates.origin
+      if (updates.status) dbUpdates.status = updates.status
+
+      const { error } = await supabase
+        .from('leads')
+        .update(dbUpdates)
+        .eq('id', id)
+
+      if (error) throw error
+    } catch (error: any) {
+      console.error('Error updating lead:', error)
+      toast({
+        title: 'Erro ao atualizar lead',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const deleteLead = async (id: string) => {
+    try {
+      const { error } = await supabase.from('leads').delete().eq('id', id)
+
+      if (error) throw error
+    } catch (error: any) {
+      console.error('Error deleting lead:', error)
+      toast({
+        title: 'Erro ao excluir lead',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
-    <LeadsContext.Provider value={{ leads, addLead, updateLead, deleteLead }}>
+    <LeadsContext.Provider
+      value={{ leads, addLead, updateLead, deleteLead, loading }}
+    >
       {children}
     </LeadsContext.Provider>
   )
