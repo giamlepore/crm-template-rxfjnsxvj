@@ -113,18 +113,19 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     fetchLeads()
 
     const channel = supabase
-      .channel('public:leads')
+      .channel('public:leads-proposals')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'leads' },
         (payload) => {
-          if (
-            payload.eventType === 'INSERT' ||
-            payload.eventType === 'UPDATE' ||
-            payload.eventType === 'DELETE'
-          ) {
-            fetchLeads()
-          }
+          fetchLeads()
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'proposals' },
+        (payload) => {
+          fetchLeads()
         },
       )
       .subscribe()

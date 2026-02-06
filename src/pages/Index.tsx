@@ -28,6 +28,7 @@ import { useLeads } from '@/context/LeadsContext'
 import { tasksService, type Task } from '@/services/tasksService'
 import { format, subMonths, isSameMonth, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { supabase } from '@/lib/supabase/client'
 
 export default function Index() {
   const { leads } = useLeads()
@@ -42,7 +43,23 @@ export default function Index() {
         console.error('Error fetching tasks:', error)
       }
     }
+
     fetchTasks()
+
+    const channel = supabase
+      .channel('dashboard-tasks')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tasks' },
+        () => {
+          fetchTasks()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   // --- Metrics Calculations ---
