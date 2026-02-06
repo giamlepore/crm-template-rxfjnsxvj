@@ -5,7 +5,6 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   ChartContainer,
   ChartTooltip,
@@ -22,17 +21,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import {
-  ArrowRight,
-  CheckCircle2,
-  Circle,
-  Clock,
-  TrendingUp,
-  Users,
-  DollarSign,
-  Calendar,
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Clock, TrendingUp, Users, DollarSign } from 'lucide-react'
 
 export default function Index() {
   // Chart Data
@@ -85,93 +74,14 @@ export default function Index() {
     },
   }
 
-  // Journey Steps
-  const journeySteps = [
-    {
-      title: 'Alocação de Caso',
-      status: 'completed',
-      users: ['https://img.usecurling.com/ppl/thumbnail?gender=male&seed=1'],
-    },
-    {
-      title: 'Identificação do Problema',
-      status: 'active',
-      users: [
-        'https://img.usecurling.com/ppl/thumbnail?gender=female&seed=2',
-        'https://img.usecurling.com/ppl/thumbnail?gender=male&seed=3',
-      ],
-    },
-    { title: 'Resolução Técnica', status: 'pending', users: [] },
-    { title: 'Processamento', status: 'pending', users: [] },
-    { title: 'Notificação', status: 'pending', users: [] },
-  ]
-
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Hero Section: Customer Journey */}
+      {/* Hero Section: Customer Journey - Cards and Button removed as per user story */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">
             Fluxo de Vendas e Jornada do Cliente
           </h2>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="rounded-full h-8">
-              <Calendar className="mr-2 h-4 w-4" /> Ver Agenda
-            </Button>
-          </div>
-        </div>
-
-        <div className="w-full overflow-x-auto pb-4 scrollbar-hide">
-          <div className="flex gap-4 min-w-[1000px]">
-            {journeySteps.map((step, index) => (
-              <div key={index} className="flex-1 relative group">
-                <div
-                  className={`glass-card rounded-2xl p-5 h-48 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl border-l-4 ${step.status === 'completed' ? 'border-l-green-500' : step.status === 'active' ? 'border-l-accent' : 'border-l-gray-300'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex -space-x-2">
-                      {step.users.length > 0 ? (
-                        step.users.map((u, i) => (
-                          <Avatar
-                            key={i}
-                            className="border-2 border-background w-8 h-8"
-                          >
-                            <AvatarImage src={u} />
-                            <AvatarFallback>U</AvatarFallback>
-                          </Avatar>
-                        ))
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-dashed border-2 border-muted-foreground/30">
-                          <Users className="h-4 w-4 text-muted-foreground/50" />
-                        </div>
-                      )}
-                    </div>
-                    {step.status === 'completed' ? (
-                      <CheckCircle2 className="text-green-500 h-6 w-6" />
-                    ) : step.status === 'active' ? (
-                      <Clock className="text-accent h-6 w-6 animate-pulse" />
-                    ) : (
-                      <Circle className="text-muted-foreground/30 h-6 w-6" />
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-lg leading-tight mb-1">
-                      {step.title}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Etapa {index + 1} de {journeySteps.length}
-                    </p>
-                  </div>
-                </div>
-
-                {index < journeySteps.length - 1 && (
-                  <div className="absolute top-1/2 -right-4 transform -translate-y-1/2 z-10 text-muted-foreground/40">
-                    <ArrowRight className="h-6 w-6" />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
