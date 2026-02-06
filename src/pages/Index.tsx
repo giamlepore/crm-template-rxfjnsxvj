@@ -13,35 +13,31 @@ import {
   ChartLegendContent,
 } from '@/components/ui/chart'
 import {
-  Area,
-  AreaChart,
   Pie,
   PieChart,
   CartesianGrid,
   XAxis,
   YAxis,
+  Line,
+  LineChart,
 } from 'recharts'
 import { Clock, TrendingUp, Users, DollarSign } from 'lucide-react'
 
 export default function Index() {
   // Chart Data
-  const supportTicketData = [
-    { month: 'Jan', tickets: 120, resolved: 100 },
-    { month: 'Fev', tickets: 150, resolved: 130 },
-    { month: 'Mar', tickets: 180, resolved: 170 },
-    { month: 'Abr', tickets: 220, resolved: 200 },
-    { month: 'Mai', tickets: 250, resolved: 240 },
-    { month: 'Jun', tickets: 300, resolved: 280 },
+  const revenueData = [
+    { month: 'Jan', revenue: 45000 },
+    { month: 'Fev', revenue: 52000 },
+    { month: 'Mar', revenue: 48000 },
+    { month: 'Abr', revenue: 61000 },
+    { month: 'Mai', revenue: 55000 },
+    { month: 'Jun', revenue: 67000 },
   ]
 
-  const chartConfig = {
-    tickets: {
-      label: 'Tickets',
+  const revenueConfig = {
+    revenue: {
+      label: 'Receita (R$)',
       color: 'hsl(var(--chart-1))',
-    },
-    resolved: {
-      label: 'Resolvidos',
-      color: 'hsl(var(--chart-2))',
     },
   }
 
@@ -76,7 +72,7 @@ export default function Index() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Hero Section: Customer Journey - Cards and Button removed as per user story */}
+      {/* Hero Section: Customer Journey */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">
@@ -147,46 +143,17 @@ export default function Index() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4 glass-card">
           <CardHeader>
-            <CardTitle>Jornada de Vendas</CardTitle>
+            <CardTitle>Relatório Receita</CardTitle>
             <CardDescription>
-              Volume de tickets e resoluções nos últimos 6 meses.
+              Visualização da receita mensal nos últimos 6 meses.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <AreaChart data={supportTicketData}>
-                <defs>
-                  <linearGradient id="colorTickets" x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-1))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                  <linearGradient
-                    id="colorResolved"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="5%"
-                      stopColor="hsl(var(--chart-2))"
-                      stopOpacity={0.8}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor="hsl(var(--chart-2))"
-                      stopOpacity={0}
-                    />
-                  </linearGradient>
-                </defs>
+            <ChartContainer config={revenueConfig} className="h-[300px] w-full">
+              <LineChart
+                data={revenueData}
+                margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
+              >
                 <CartesianGrid
                   vertical={false}
                   strokeDasharray="3 3"
@@ -204,26 +171,18 @@ export default function Index() {
                   axisLine={false}
                   tickMargin={8}
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  tickFormatter={(value) => `R$${value / 1000}k`}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Area
+                <Line
                   type="monotone"
-                  dataKey="tickets"
-                  stroke="hsl(var(--chart-1))"
-                  fillOpacity={1}
-                  fill="url(#colorTickets)"
+                  dataKey="revenue"
                   strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="resolved"
-                  stroke="hsl(var(--chart-2))"
-                  fillOpacity={1}
-                  fill="url(#colorResolved)"
-                  strokeWidth={2}
+                  stroke="var(--color-revenue)"
+                  activeDot={{ r: 8 }}
                 />
                 <ChartLegend content={<ChartLegendContent />} />
-              </AreaChart>
+              </LineChart>
             </ChartContainer>
           </CardContent>
         </Card>
