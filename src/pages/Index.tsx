@@ -1,3 +1,4 @@
+import { useEffect, useState, useMemo } from 'react'
 import {
   Card,
   CardContent,
@@ -11,10 +12,11 @@ import {
   ChartTooltipContent,
   ChartLegend,
   ChartLegendContent,
+  type ChartConfig,
 } from '@/components/ui/chart'
 import {
-  Pie,
-  PieChart,
+  Bar,
+  BarChart,
   CartesianGrid,
   XAxis,
   YAxis,
@@ -22,52 +24,177 @@ import {
   LineChart,
 } from 'recharts'
 import { Clock, TrendingUp, Users, DollarSign } from 'lucide-react'
+import { useLeads } from '@/context/LeadsContext'
+import { tasksService, type Task } from '@/services/tasksService'
+import { format, subMonths, isSameMonth, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 
 export default function Index() {
-  // Chart Data
-  const revenueData = [
-    { month: 'Jan', revenue: 45000 },
-    { month: 'Fev', revenue: 52000 },
-    { month: 'Mar', revenue: 48000 },
-    { month: 'Abr', revenue: 61000 },
-    { month: 'Mai', revenue: 55000 },
-    { month: 'Jun', revenue: 67000 },
-  ]
+  const { leads } = useLeads()
+  const [tasks, setTasks] = useState<Task[]>([])
 
-  const revenueConfig = {
+  useEffect(() => {
+    const fetchTasks = async () => {
+      try {
+        const data = await tasksService.getTasks()
+        setTasks(data)
+      } catch (error) {
+        console.error('Error fetching tasks:', error)
+      }
+    }
+    fetchTasks()
+  }, [])
+
+  // --- Metrics Calculations ---
+  const metrics = useMemo(() => {
+    const totalLeads = leads.length
+    const newLeadsThisMonth = leads.filter((l) =>
+      isSameMonth(parseISO(l.createdAt), new Date()),
+    ).length
+
+    const wonLeads = leads.filter((l) => l.status === 'Fechado Ganho')
+    const wonCount = wonLeads.length
+
+    const conversionRate = totalLeads > 0 ? (wonCount / totalLeads) * 100 : 0
+
+    const estimatedRevenue = wonLeads.reduce((acc, lead) => {
+      const approvedProposals = lead.proposals.filter(
+        (p) => p.status === 'Aprovada',
+      )
+      // Sum all approved proposals values for this lead
+      const leadRevenue = approvedProposals.reduce(
+        (sum, p) => sum + (p.valor || 0),
+        0,
+      )
+      return acc + leadRevenue
+    }, 0)
+
+    // Active activities: status is not 'Concluída'
+    const activeActivities = tasks.filter(
+      (t) => t.status !== 'Concluída',
+    ).length
+
+    return {
+      totalLeads,
+      newLeadsThisMonth,
+      conversionRate,
+      estimatedRevenue,
+      activeActivities,
+    }
+  }, [leads, tasks])
+
+  // --- Revenue Chart Data (Last 6 Months) ---
+  const revenueChartData = useMemo(() => {
+    const today = new Date()
+    const data = []
+
+    for (let i = 5; i >= 0; i--) {
+      const date = subMonths(today, i)
+      const monthKey = format(date, 'MMM', { locale: ptBR })
+      // Capitalize first letter (jan -> Jan)
+      const formattedLabel =
+        monthKey.charAt(0).toUpperCase() + monthKey.slice(1)
+
+      const monthRevenue = leads
+        .filter((lead) => {
+          if (lead.status !== 'Fechado Ganho') return false
+          const leadDate = parseISO(lead.createdAt)
+          return isSameMonth(leadDate, date)
+        })
+        .reduce((acc, lead) => {
+          const approvedProposals = lead.proposals.filter(
+            (p) => p.status === 'Aprovada',
+          )
+          const val = approvedProposals.reduce(
+            (sum, p) => sum + (p.valor || 0),
+            0,
+          )
+          return acc + val
+        }, 0)
+
+      data.push({
+        month: formattedLabel,
+        revenue: monthRevenue,
+      })
+    }
+    return data
+  }, [leads])
+
+  // --- Pipeline Chart Data ---
+  const pipelineChartData = useMemo(() => {
+    const stages = [
+      'Novo Lead',
+      'Qualificação',
+      'Proposta Enviada',
+      'Negociação',
+      'Fechado Ganho',
+    ]
+
+    const colors = [
+      'hsl(var(--chart-1))',
+      'hsl(var(--chart-2))',
+      'hsl(var(--chart-3))',
+      'hsl(var(--chart-4))',
+      'hsl(var(--chart-5))',
+    ]
+
+    return stages.map((stage, index) => ({
+      stage,
+      count: leads.filter((l) => l.status === stage).length,
+      fill: colors[index % colors.length],
+    }))
+  }, [leads])
+
+  // --- Chart Configs ---
+  const revenueConfig: ChartConfig = {
     revenue: {
       label: 'Receita (R$)',
       color: 'hsl(var(--chart-1))',
     },
   }
 
-  const salesData = [
-    { name: 'Novo', value: 400, fill: 'hsl(var(--chart-1))' },
-    { name: 'Qualificado', value: 300, fill: 'hsl(var(--chart-2))' },
-    { name: 'Proposta', value: 300, fill: 'hsl(var(--chart-3))' },
-    { name: 'Fechado', value: 200, fill: 'hsl(var(--chart-4))' },
-  ]
-
-  const salesConfig = {
-    visitors: {
-      label: 'Vendas',
+  const pipelineConfig: ChartConfig = {
+    count: {
+      label: 'Quantidade',
     },
-    novo: {
-      label: 'Novo',
+    'Novo Lead': {
+      label: 'Novo Lead',
       color: 'hsl(var(--chart-1))',
     },
-    qualificado: {
-      label: 'Qualificado',
+    Qualificação: {
+      label: 'Qualificação',
       color: 'hsl(var(--chart-2))',
     },
-    proposta: {
-      label: 'Proposta',
+    'Proposta Enviada': {
+      label: 'Proposta Enviada',
       color: 'hsl(var(--chart-3))',
     },
-    fechado: {
-      label: 'Fechado',
+    Negociação: {
+      label: 'Negociação',
       color: 'hsl(var(--chart-4))',
     },
+    'Fechado Ganho': {
+      label: 'Fechado Ganho',
+      color: 'hsl(var(--chart-5))',
+    },
+  }
+
+  // Helper for currency formatting
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
+
+  const formatCompactCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      notation: 'compact',
+      compactDisplay: 'short',
+    }).format(value)
   }
 
   return (
@@ -76,7 +203,7 @@ export default function Index() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold tracking-tight">
-            Fluxo de Vendas e Jornada do Cliente
+            Dashboard de Vendas
           </h2>
         </div>
       </section>
@@ -91,9 +218,9 @@ export default function Index() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
+            <div className="text-2xl font-bold">{metrics.totalLeads}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% em relação ao mês passado
+              +{metrics.newLeadsThisMonth} novos este mês
             </p>
           </CardContent>
         </Card>
@@ -103,9 +230,11 @@ export default function Index() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15.2%</div>
+            <div className="text-2xl font-bold">
+              {metrics.conversionRate.toFixed(1)}%
+            </div>
             <p className="text-xs text-muted-foreground">
-              +2.4% em relação ao mês passado
+              Taxa de fechamento global
             </p>
           </CardContent>
         </Card>
@@ -117,9 +246,11 @@ export default function Index() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">R$ 542.3k</div>
+            <div className="text-2xl font-bold">
+              {formatCompactCurrency(metrics.estimatedRevenue)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              +12% em relação ao mês passado
+              Total acumulado em contratos fechados
             </p>
           </CardContent>
         </Card>
@@ -131,9 +262,9 @@ export default function Index() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">34</div>
+            <div className="text-2xl font-bold">{metrics.activeActivities}</div>
             <p className="text-xs text-muted-foreground">
-              4 urgentes para hoje
+              Tarefas pendentes no sistema
             </p>
           </CardContent>
         </Card>
@@ -143,15 +274,15 @@ export default function Index() {
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4 glass-card">
           <CardHeader>
-            <CardTitle>Relatório Receita</CardTitle>
+            <CardTitle>Relatório de Receita</CardTitle>
             <CardDescription>
-              Visualização da receita mensal nos últimos 6 meses.
+              Receita de leads ganhos nos últimos 6 meses.
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <ChartContainer config={revenueConfig} className="h-[300px] w-full">
               <LineChart
-                data={revenueData}
+                data={revenueChartData}
                 margin={{ top: 20, right: 30, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
@@ -171,9 +302,15 @@ export default function Index() {
                   axisLine={false}
                   tickMargin={8}
                   tick={{ fill: 'hsl(var(--muted-foreground))' }}
-                  tickFormatter={(value) => `R$${value / 1000}k`}
+                  tickFormatter={(value) => formatCompactCurrency(value)}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => formatCurrency(Number(value))}
+                    />
+                  }
+                />
                 <Line
                   type="monotone"
                   dataKey="revenue"
@@ -190,25 +327,37 @@ export default function Index() {
           <CardHeader>
             <CardTitle>Distribuição de Pipeline</CardTitle>
             <CardDescription>
-              Status atual das oportunidades de venda.
+              Volume atual de leads por etapa do funil.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={salesConfig} className="h-[300px] w-full">
-              <PieChart>
-                <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                <Pie
-                  data={salesData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={60}
-                  strokeWidth={5}
-                ></Pie>
-                <ChartLegend
-                  content={<ChartLegendContent nameKey="name" />}
-                  className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+            <ChartContainer
+              config={pipelineConfig}
+              className="h-[300px] w-full"
+            >
+              <BarChart
+                data={pipelineChartData}
+                layout="vertical"
+                margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
+              >
+                <CartesianGrid horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="stage"
+                  type="category"
+                  width={100}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12 }}
                 />
-              </PieChart>
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar
+                  dataKey="count"
+                  layout="vertical"
+                  radius={[0, 4, 4, 0]}
+                  barSize={32}
+                />
+              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
