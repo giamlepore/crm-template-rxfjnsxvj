@@ -17,7 +17,6 @@ import {
   KanbanSquare,
   CheckSquare,
   FileText,
-  BarChart3,
   Settings,
   Moon,
   Sun,
@@ -79,12 +78,6 @@ export function AppSidebar() {
       label: 'Propostas',
       path: '/proposals',
       roles: ['admin', 'gerente', 'vendedor'],
-    },
-    {
-      icon: BarChart3,
-      label: 'Relatórios',
-      path: '/reports',
-      roles: ['admin', 'gerente'],
     },
   ]
 

@@ -11,7 +11,6 @@ import Leads from './pages/Leads'
 import Pipeline from './pages/Pipeline'
 import Activities from './pages/Activities'
 import Proposals from './pages/Proposals'
-import Reports from './pages/Reports'
 import Users from './pages/Users'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'
@@ -37,7 +36,6 @@ const App = () => (
                 <Route path="/activities" element={<Activities />} />
                 <Route path="/tasks" element={<Activities />} />
                 <Route path="/proposals" element={<Proposals />} />
-                <Route path="/reports" element={<Reports />} />
                 <Route path="/users" element={<Users />} />
               </Route>
             </Route>
