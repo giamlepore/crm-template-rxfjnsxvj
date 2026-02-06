@@ -103,10 +103,10 @@ export function AppSidebar() {
       <SidebarHeader className="h-16 flex items-center justify-center border-b border-sidebar-border/50">
         <div className="flex items-center gap-2 font-bold text-xl px-2 w-full overflow-hidden">
           <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground text-xs">S</span>
+            <span className="text-primary-foreground text-xs">A</span>
           </div>
           <span className="group-data-[collapsible=icon]:hidden transition-all duration-200">
-            SugarCRM
+            ADAPTΔCRM
           </span>
         </div>
       </SidebarHeader>

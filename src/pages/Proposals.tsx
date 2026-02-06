@@ -114,7 +114,7 @@ export default function Proposals() {
         </head>
         <body>
           <div class="header">
-            <div class="logo">SugarCRM</div>
+            <div class="logo">ADAPTΔCRM</div>
             <div class="meta">
               <div>Data: ${new Date().toLocaleDateString('pt-BR')}</div>
               <div>Validade: ${proposal.validade ? new Date(proposal.validade).toLocaleDateString('pt-BR') : 'N/A'}</div>
@@ -181,7 +181,7 @@ export default function Proposals() {
           }
 
           <div class="footer">
-            <p>Este documento foi gerado automaticamente pelo sistema SugarCRM.</p>
+            <p>Este documento foi gerado automaticamente pelo sistema ADAPTΔCRM.</p>
           </div>
 
           <script>
