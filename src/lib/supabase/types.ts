@@ -21,6 +21,7 @@ export type Database = {
           descricao: string | null
           id: string
           lead_id: string | null
+          organization_id: string
           tipo: string
           user_id: string | null
         }
@@ -29,6 +30,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id?: string | null
+          organization_id?: string
           tipo: string
           user_id?: string | null
         }
@@ -37,6 +39,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id?: string | null
+          organization_id?: string
           tipo?: string
           user_id?: string | null
         }
@@ -46,6 +49,13 @@ export type Database = {
             columns: ['lead_id']
             isOneToOne: false
             referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'interactions_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
@@ -65,6 +75,7 @@ export type Database = {
           email: string | null
           empresa: string
           id: string
+          organization_id: string
           origem: string | null
           segmento: string | null
           status: string
@@ -78,6 +89,7 @@ export type Database = {
           email?: string | null
           empresa: string
           id?: string
+          organization_id?: string
           origem?: string | null
           segmento?: string | null
           status?: string
@@ -91,6 +103,7 @@ export type Database = {
           email?: string | null
           empresa?: string
           id?: string
+          organization_id?: string
           origem?: string | null
           segmento?: string | null
           status?: string
@@ -105,7 +118,32 @@ export type Database = {
             referencedRelation: 'users'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'leads_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
         ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       proposals: {
         Row: {
@@ -116,6 +154,7 @@ export type Database = {
           itens: Json | null
           lead_id: string | null
           observacoes: string | null
+          organization_id: string
           status: string | null
           titulo: string
           validade: string | null
@@ -129,6 +168,7 @@ export type Database = {
           itens?: Json | null
           lead_id?: string | null
           observacoes?: string | null
+          organization_id?: string
           status?: string | null
           titulo: string
           validade?: string | null
@@ -142,6 +182,7 @@ export type Database = {
           itens?: Json | null
           lead_id?: string | null
           observacoes?: string | null
+          organization_id?: string
           status?: string | null
           titulo?: string
           validade?: string | null
@@ -162,6 +203,13 @@ export type Database = {
             referencedRelation: 'leads'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'proposals_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
         ]
       }
       tasks: {
@@ -169,6 +217,7 @@ export type Database = {
           descricao: string | null
           id: string
           lead_id: string | null
+          organization_id: string
           prazo: string | null
           status: string | null
           titulo: string
@@ -178,6 +227,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id?: string | null
+          organization_id?: string
           prazo?: string | null
           status?: string | null
           titulo: string
@@ -187,6 +237,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           lead_id?: string | null
+          organization_id?: string
           prazo?: string | null
           status?: string | null
           titulo?: string
@@ -198,6 +249,13 @@ export type Database = {
             columns: ['lead_id']
             isOneToOne: false
             referencedRelation: 'leads'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'tasks_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
             referencedColumns: ['id']
           },
           {
@@ -214,27 +272,39 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          organization_id: string
           role: string
         }
         Insert: {
           email?: string | null
           id: string
           name?: string | null
+          organization_id: string
           role?: string
         }
         Update: {
           email?: string | null
           id?: string
           name?: string | null
+          organization_id?: string
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'users_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      get_my_org_id: { Args: never; Returns: string }
       is_admin_or_manager: { Args: never; Returns: boolean }
     }
     Enums: {
