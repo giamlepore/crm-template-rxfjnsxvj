@@ -7,6 +7,7 @@ import React, {
 } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/context/AuthContext'
 
 export type LeadStatus =
   | 'Novo Lead'
@@ -54,6 +55,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
   const [leads, setLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const { organizationId, user } = useAuth()
 
   const fetchLeads = async () => {
     try {
@@ -110,20 +112,36 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
   }
 
   useEffect(() => {
+    if (!user) return
+
     fetchLeads()
 
     const channel = supabase
       .channel('public:leads-proposals')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'leads' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads',
+          filter: organizationId
+            ? `organization_id=eq.${organizationId}`
+            : undefined,
+        },
         (payload) => {
           fetchLeads()
         },
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'proposals' },
+        {
+          event: '*',
+          schema: 'public',
+          table: 'proposals',
+          filter: organizationId
+            ? `organization_id=eq.${organizationId}`
+            : undefined,
+        },
         (payload) => {
           fetchLeads()
         },
@@ -133,16 +151,12 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [user, organizationId])
 
   const addLead = async (
     newLead: Omit<Lead, 'id' | 'createdAt' | 'createdBy' | 'proposals'>,
   ) => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
       const dbLead = {
         empresa: newLead.company,
         contato: newLead.contactName,
@@ -153,6 +167,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         origem: newLead.origin,
         status: newLead.status,
         created_by: user?.id,
+        // organization_id will be set by DB default based on user
       }
 
       const { data, error } = await supabase

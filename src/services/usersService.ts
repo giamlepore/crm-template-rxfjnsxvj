@@ -5,6 +5,7 @@ export interface UserProfile {
   role: 'vendedor' | 'gerente' | 'admin'
   email?: string
   name?: string
+  organization_id?: string
 }
 
 export const usersService = {

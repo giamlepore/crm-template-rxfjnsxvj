@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react'
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [companyName, setCompanyName] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { signIn, signUp } = useAuth()
@@ -30,13 +31,14 @@ export default function Login() {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password)
+        const { error } = await signUp(email, password, companyName)
         if (error) throw error
         toast({
           title: 'Conta criada com sucesso!',
           description: 'Verifique seu e-mail para confirmar o cadastro.',
         })
         setIsSignUp(false)
+        setCompanyName('')
       } else {
         const { error } = await signIn(email, password)
         if (error) throw error
@@ -62,12 +64,25 @@ export default function Login() {
           </CardTitle>
           <CardDescription className="text-center">
             {isSignUp
-              ? 'Preencha os dados abaixo para criar sua conta'
+              ? 'Preencha os dados abaixo para criar sua organização'
               : 'Entre com suas credenciais para acessar o sistema'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Nome da Empresa</Label>
+                <Input
+                  id="companyName"
+                  type="text"
+                  placeholder="Minha Empresa Ltda"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  required={isSignUp}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>
               <Input

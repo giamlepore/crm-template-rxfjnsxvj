@@ -8,7 +8,41 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabase = createClient(
+    // 1. Authenticate the requestor
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('Authorization header missing')
+    }
+
+    const supabaseUserClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    )
+
+    const {
+      data: { user: requestor },
+      error: userError,
+    } = await supabaseUserClient.auth.getUser()
+
+    if (userError || !requestor) {
+      throw new Error('Unauthorized')
+    }
+
+    // 2. Get requestor's organization
+    const { data: requestorProfile, error: profileError } =
+      await supabaseUserClient
+        .from('users')
+        .select('organization_id')
+        .eq('id', requestor.id)
+        .single()
+
+    if (profileError || !requestorProfile?.organization_id) {
+      throw new Error('Organization not found for user')
+    }
+
+    // 3. Create the new user in the same organization
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
@@ -19,29 +53,19 @@ Deno.serve(async (req: Request) => {
       throw new Error('Email e senha são obrigatórios')
     }
 
-    // Create user in Auth
     const { data: userData, error: createError } =
-      await supabase.auth.admin.createUser({
+      await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
-        user_metadata: { name: name || '' },
+        user_metadata: {
+          name: name || '',
+          organization_id: requestorProfile.organization_id,
+          role: role || 'vendedor',
+        },
       })
 
     if (createError) throw createError
-
-    // Update role if specified (and different from default 'vendedor')
-    if (userData.user && role && role !== 'vendedor') {
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ role })
-        .eq('id', userData.user.id)
-
-      if (updateError) {
-        // Log error but don't fail the request completely as user is created
-        console.error('Error updating role:', updateError)
-      }
-    }
 
     return new Response(JSON.stringify(userData), {
       headers: {

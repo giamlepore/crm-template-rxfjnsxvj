@@ -12,7 +12,13 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   role: 'vendedor' | 'gerente' | 'admin' | null
-  signUp: (email: string, password: string) => Promise<{ error: any }>
+  organizationId: string | null
+  organizationName: string | null
+  signUp: (
+    email: string,
+    password: string,
+    companyName?: string,
+  ) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   loading: boolean
@@ -34,23 +40,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [role, setRole] = useState<'vendedor' | 'gerente' | 'admin' | null>(
     null,
   )
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [organizationName, setOrganizationName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('role')
+        .select('role, organization_id, organizations(name)')
         .eq('id', userId)
         .single()
 
       if (error) {
-        console.error('Error fetching user role:', error)
+        console.error('Error fetching user profile:', error)
         return null
       }
+
+      setOrganizationId(data?.organization_id)
+      setOrganizationName((data?.organizations as any)?.name || null)
       return data?.role as 'vendedor' | 'gerente' | 'admin'
     } catch (error) {
-      console.error('Unexpected error fetching role:', error)
+      console.error('Unexpected error fetching profile:', error)
       return null
     }
   }
@@ -64,9 +75,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null)
 
       if (session?.user) {
-        fetchUserRole(session.user.id).then((r) => setRole(r))
+        fetchUserProfile(session.user.id).then((r) => setRole(r))
       } else {
         setRole(null)
+        setOrganizationId(null)
+        setOrganizationName(null)
       }
 
       if (event === 'INITIAL_SESSION') {
@@ -79,7 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session)
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchUserRole(session.user.id).then((r) => {
+        fetchUserProfile(session.user.id).then((r) => {
           setRole(r)
           setLoading(false)
         })
@@ -91,10 +104,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    companyName?: string,
+  ) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: {
+          company_name: companyName,
+        },
+      },
     })
     return { error }
   }
@@ -113,6 +135,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setRole(null)
       setUser(null)
       setSession(null)
+      setOrganizationId(null)
+      setOrganizationName(null)
     }
     return { error }
   }
@@ -121,6 +145,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     session,
     role,
+    organizationId,
+    organizationName,
     signUp,
     signIn,
     signOut,
