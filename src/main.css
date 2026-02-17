@@ -57,13 +57,15 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Harmonized background with sidebar for cohesive look */
+    --background: 240 5.9% 10%; /* Matches sidebar-background */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    /* Match card and popover to background for consistency */
+    --card: 240 5.9% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 240 5.9% 10%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 210 40% 98%;
@@ -91,7 +93,7 @@
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-border: 240 3.7% 40%; /* Lighter gray (Zinc-600 approx) for clearly visible divider in dark mode */
     --sidebar-ring: 217 91% 60%;
   }
 }
