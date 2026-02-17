@@ -21,15 +21,17 @@ import {
   Moon,
   Sun,
   ShieldCheck,
+  Building2,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function AppSidebar() {
   const location = useLocation()
-  const { role } = useAuth()
+  const { role, organizationName, loading } = useAuth()
   const [isDarkMode, setIsDarkMode] = useState(false)
 
   useEffect(() => {
@@ -135,6 +137,42 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/50 p-4">
+        {/* Organization and Role Info */}
+        <div className="flex flex-col gap-2 mb-2 group-data-[collapsible=icon]:hidden">
+          {loading ? (
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-[80%]" />
+              <Skeleton className="h-3 w-[60%]" />
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              {organizationName && (
+                <div className="text-sm truncate" title={organizationName}>
+                  <span className="text-muted-foreground mr-1">Empresa:</span>
+                  <span className="font-medium text-sidebar-foreground">
+                    {organizationName}
+                  </span>
+                </div>
+              )}
+              {role && (
+                <div className="text-sm truncate" title={role}>
+                  <span className="text-muted-foreground mr-1">
+                    Nível de Acesso:
+                  </span>
+                  <span className="font-medium text-sidebar-foreground capitalize">
+                    {role}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Separator only if info is displayed */}
+        {!loading && (organizationName || role) && (
+          <div className="h-px bg-sidebar-border/50 my-1 group-data-[collapsible=icon]:hidden" />
+        )}
+
         <div className="flex flex-col gap-2 group-data-[collapsible=icon]:items-center">
           <Button
             variant="ghost"
