@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Loader2, CalendarIcon } from 'lucide-react'
+import { Loader2, CalendarIcon, Check, ChevronsUpDown } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
@@ -30,14 +30,26 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { CreateTaskDTO } from '@/services/tasksService'
 import { useAuth } from '@/context/AuthContext'
+import { useLeads } from '@/context/LeadsContext'
 
 const taskSchema = z.object({
   titulo: z.string().min(1, 'O título é obrigatório'),
   descricao: z.string().optional(),
   prazo: z.date({ required_error: 'O prazo é obrigatório' }),
   status: z.string().default('Pendente'),
+  leadId: z
+    .string({ required_error: 'Selecione um lead' })
+    .min(1, 'Selecione um lead'),
 })
 
 type TaskFormValues = z.infer<typeof taskSchema>
@@ -56,7 +68,9 @@ export function TaskForm({
   defaultValues,
 }: TaskFormProps) {
   const [submitting, setSubmitting] = useState(false)
+  const [openLeadSelect, setOpenLeadSelect] = useState(false)
   const { user } = useAuth()
+  const { leads, loading: loadingLeads } = useLeads()
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskSchema),
@@ -65,9 +79,17 @@ export function TaskForm({
       descricao: '',
       status: 'Pendente',
       prazo: new Date(),
+      leadId: leadId || '',
       ...defaultValues,
     },
   })
+
+  // Watch for leadId prop changes to update the form value if needed
+  useEffect(() => {
+    if (leadId) {
+      form.setValue('leadId', leadId)
+    }
+  }, [leadId, form])
 
   const handleSubmit = async (values: TaskFormValues) => {
     if (!user) return
@@ -78,10 +100,16 @@ export function TaskForm({
         descricao: values.descricao || null,
         prazo: values.prazo.toISOString(),
         status: values.status,
-        lead_id: leadId || null,
+        lead_id: values.leadId,
         user_id: user.id,
       })
-      form.reset()
+      form.reset({
+        titulo: '',
+        descricao: '',
+        status: 'Pendente',
+        prazo: new Date(),
+        leadId: leadId || '',
+      })
     } finally {
       setSubmitting(false)
     }
@@ -90,12 +118,88 @@ export function TaskForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        {!leadId && (
+          <FormField
+            control={form.control}
+            name="leadId"
+            render={({ field }) => (
+              <FormItem className="flex flex-col">
+                <FormLabel>
+                  Lead <span className="text-destructive">*</span>
+                </FormLabel>
+                <Popover open={openLeadSelect} onOpenChange={setOpenLeadSelect}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openLeadSelect}
+                        disabled={loadingLeads}
+                        className={cn(
+                          'w-full justify-between',
+                          !field.value && 'text-muted-foreground',
+                        )}
+                      >
+                        {field.value
+                          ? leads.find((lead) => lead.id === field.value)
+                              ?.company || 'Lead não encontrado'
+                          : 'Selecione um lead...'}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar lead..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum lead encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {leads.map((lead) => (
+                            <CommandItem
+                              value={`${lead.company} ${lead.contactName}`}
+                              key={lead.id}
+                              onSelect={() => {
+                                form.setValue('leadId', lead.id)
+                                setOpenLeadSelect(false)
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  'mr-2 h-4 w-4',
+                                  lead.id === field.value
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">
+                                  {lead.company}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {lead.contactName}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="titulo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Título</FormLabel>
+              <FormLabel>
+                Título <span className="text-destructive">*</span>
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="Ex: Ligar para agendar reunião"
@@ -113,7 +217,9 @@ export function TaskForm({
             name="prazo"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Prazo</FormLabel>
+                <FormLabel>
+                  Prazo <span className="text-destructive">*</span>
+                </FormLabel>
                 <Popover>
                   <PopoverTrigger asChild>
                     <FormControl>
