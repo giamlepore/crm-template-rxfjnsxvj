@@ -4,10 +4,12 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/context/AuthContext'
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 export type LeadStatus =
   | 'Novo Lead'
@@ -47,6 +49,7 @@ interface LeadsContextType {
   updateLead: (id: string, updates: Partial<Lead>) => Promise<boolean>
   deleteLead: (id: string) => Promise<void>
   loading: boolean
+  refreshLeads: () => Promise<void>
 }
 
 const LeadsContext = createContext<LeadsContextType | undefined>(undefined)
@@ -57,7 +60,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast()
   const { organizationId, user } = useAuth()
 
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('leads')
@@ -109,7 +112,87 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
+
+  const handleProposalChange = useCallback(
+    (payload: RealtimePostgresChangesPayload<any>) => {
+      const { eventType, new: newRecord, old: oldRecord } = payload
+
+      setLeads((currentLeads) => {
+        return currentLeads.map((lead) => {
+          // Handle INSERT: Add proposal to the correct lead
+          if (eventType === 'INSERT' && newRecord.lead_id === lead.id) {
+            const newProposal: Proposal = {
+              id: newRecord.id,
+              title: newRecord.titulo,
+              valor: newRecord.valor || 0,
+              status: newRecord.status,
+            }
+            // Avoid duplicates
+            if (lead.proposals.some((p) => p.id === newProposal.id)) {
+              return lead
+            }
+            return { ...lead, proposals: [...lead.proposals, newProposal] }
+          }
+
+          // Handle UPDATE: Update existing proposal or move it
+          if (eventType === 'UPDATE') {
+            const hasProposal = lead.proposals.some(
+              (p) => p.id === newRecord.id,
+            )
+
+            // If this lead is the target of the update (or move)
+            if (newRecord.lead_id === lead.id) {
+              const updatedProposal: Proposal = {
+                id: newRecord.id,
+                title: newRecord.titulo,
+                valor: newRecord.valor || 0,
+                status: newRecord.status,
+              }
+
+              if (hasProposal) {
+                // Update existing
+                return {
+                  ...lead,
+                  proposals: lead.proposals.map((p) =>
+                    p.id === newRecord.id ? updatedProposal : p,
+                  ),
+                }
+              } else {
+                // Moved to this lead
+                return {
+                  ...lead,
+                  proposals: [...lead.proposals, updatedProposal],
+                }
+              }
+            } else if (hasProposal && newRecord.lead_id !== lead.id) {
+              // Moved AWAY from this lead
+              return {
+                ...lead,
+                proposals: lead.proposals.filter((p) => p.id !== newRecord.id),
+              }
+            }
+          }
+
+          // Handle DELETE
+          if (eventType === 'DELETE') {
+            const hasProposal = lead.proposals.some(
+              (p) => p.id === oldRecord.id,
+            )
+            if (hasProposal) {
+              return {
+                ...lead,
+                proposals: lead.proposals.filter((p) => p.id !== oldRecord.id),
+              }
+            }
+          }
+
+          return lead
+        })
+      })
+    },
+    [],
+  )
 
   useEffect(() => {
     if (!user) return
@@ -128,7 +211,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
             ? `organization_id=eq.${organizationId}`
             : undefined,
         },
-        (payload) => {
+        () => {
           fetchLeads()
         },
       )
@@ -138,12 +221,12 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
           event: '*',
           schema: 'public',
           table: 'proposals',
-          filter: organizationId
-            ? `organization_id=eq.${organizationId}`
-            : undefined,
+          // We intentionally removed the filter here to rely on RLS and ensuring we catch all events
+          // even if client-side organizationId is not perfectly synced yet.
+          // Since we use RLS, we only receive proposals we are allowed to see.
         },
         (payload) => {
-          fetchLeads()
+          handleProposalChange(payload)
         },
       )
       .subscribe()
@@ -151,7 +234,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, organizationId])
+  }, [user, organizationId, fetchLeads, handleProposalChange])
 
   const addLead = async (
     newLead: Omit<Lead, 'id' | 'createdAt' | 'createdBy' | 'proposals'>,
@@ -167,7 +250,7 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
         origem: newLead.origin,
         status: newLead.status,
         created_by: user?.id,
-        // organization_id will be set by DB default based on user
+        // organization_id will be set by DB default based on user or trigger
       }
 
       const { data, error } = await supabase
@@ -269,7 +352,14 @@ export const LeadsProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <LeadsContext.Provider
-      value={{ leads, addLead, updateLead, deleteLead, loading }}
+      value={{
+        leads,
+        addLead,
+        updateLead,
+        deleteLead,
+        loading,
+        refreshLeads: fetchLeads,
+      }}
     >
       {children}
     </LeadsContext.Provider>
