@@ -18,37 +18,16 @@ import {
   CheckSquare,
   FileText,
   Settings,
-  Moon,
-  Sun,
   ShieldCheck,
-  Building2,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export function AppSidebar() {
   const location = useLocation()
   const { role, organizationName, loading } = useAuth()
-  const [isDarkMode, setIsDarkMode] = useState(false)
-
-  useEffect(() => {
-    if (document.documentElement.classList.contains('dark')) {
-      setIsDarkMode(true)
-    }
-  }, [])
-
-  const toggleTheme = () => {
-    const newMode = !isDarkMode
-    setIsDarkMode(newMode)
-    if (newMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }
 
   const menuItems = [
     {
@@ -174,21 +153,6 @@ export function AppSidebar() {
         )}
 
         <div className="flex flex-col gap-2 group-data-[collapsible=icon]:items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleTheme}
-            className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
-          >
-            {isDarkMode ? (
-              <Sun className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
-            ) : (
-              <Moon className="h-4 w-4 mr-2 group-data-[collapsible=icon]:mr-0" />
-            )}
-            <span className="group-data-[collapsible=icon]:hidden">
-              {isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
-            </span>
-          </Button>
           <Button
             variant="ghost"
             size="sm"

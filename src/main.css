@@ -8,12 +8,12 @@
 
 @layer base {
   :root {
-    /* Custom Theme based on SugarCRM inspiration and specs */
+    /* Custom Theme based on SugarCRM inspiration and specs - Forced Light Mode */
     --background: 210 20% 96%; /* #F3F4F6 - Light blue-grey */
     --foreground: 222.2 84% 4.9%;
 
     /* Card background with transparency for glassmorphism */
-    --card: 0 0% 100%; /* We will handle opacity in utility classes for glass effect */
+    --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
@@ -56,46 +56,7 @@
     --chart-5: 27 87% 67%; /* Orange */
   }
 
-  .dark {
-    /* Harmonized background with sidebar for cohesive look */
-    --background: 240 5.9% 10%; /* Matches sidebar-background */
-    --foreground: 210 40% 98%;
-
-    /* Match card and popover to background for consistency */
-    --card: 240 5.9% 10%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 240 5.9% 10%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 84% 4.9%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217 91% 60%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 40%; /* Lighter gray (Zinc-600 approx) for clearly visible divider in dark mode */
-    --sidebar-ring: 217 91% 60%;
-  }
+  /* Dark mode block removed to enforce light mode */
 
   * {
     @apply border-border;
@@ -107,11 +68,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/80 dark:bg-black/50 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-xl;
   }
 
   .glass-header {
-    @apply bg-white/60 dark:bg-black/60 backdrop-blur-md border-b border-white/20 supports-[backdrop-filter]:bg-white/60;
+    @apply bg-white/60 backdrop-blur-md border-b border-white/20 supports-[backdrop-filter]:bg-white/60;
   }
 
   .scrollbar-hide {
