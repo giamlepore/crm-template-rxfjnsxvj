@@ -57,7 +57,7 @@ export default function Pipeline() {
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col space-y-4 animate-fade-in">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Pipeline de Vendas
         </h1>
         <div className="flex gap-2">

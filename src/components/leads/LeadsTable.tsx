@@ -94,7 +94,9 @@ export function LeadsTable({
           ) : (
             leads.map((lead) => (
               <TableRow key={lead.id}>
-                <TableCell className="font-medium">{lead.company}</TableCell>
+                <TableCell className="font-medium text-foreground">
+                  {lead.company}
+                </TableCell>
                 <TableCell>{lead.contactName}</TableCell>
                 <TableCell>{lead.segment || '-'}</TableCell>
                 <TableCell className="text-muted-foreground">

@@ -96,6 +96,13 @@
     --sidebar-border: 240 3.7% 40%; /* Lighter gray (Zinc-600 approx) for clearly visible divider in dark mode */
     --sidebar-ring: 217 91% 60%;
   }
+
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 
 @layer utilities {

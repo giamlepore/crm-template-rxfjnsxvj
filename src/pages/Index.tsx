@@ -219,7 +219,7 @@ export default function Index() {
       {/* Hero Section: Customer Journey */}
       <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
             Dashboard de Vendas
           </h2>
         </div>
