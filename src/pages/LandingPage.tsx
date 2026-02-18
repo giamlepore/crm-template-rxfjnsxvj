@@ -23,6 +23,7 @@ import {
   PieChart,
   Calendar,
   MoreHorizontal,
+  Check,
 } from 'lucide-react'
 
 export default function LandingPage() {
