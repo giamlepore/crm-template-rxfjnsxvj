@@ -14,6 +14,7 @@ import Proposals from './pages/Proposals'
 import Users from './pages/Users'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'
+import LandingPage from './pages/LandingPage'
 import Layout from './components/Layout'
 
 const App = () => (
@@ -26,6 +27,9 @@ const App = () => (
           <Toaster />
           <Sonner />
           <Routes>
+            {/* Landing Page Route */}
+            <Route path="/adapta" element={<LandingPage />} />
+
             <Route path="/login" element={<Login />} />
 
             <Route element={<ProtectedRoute />}>
