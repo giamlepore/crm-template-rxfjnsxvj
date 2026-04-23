@@ -12,7 +12,6 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { Info, Loader2 } from 'lucide-react'
 
@@ -76,22 +75,20 @@ export default function Login() {
         </CardHeader>
         <CardContent>
           {!isSignUp && (
-            <Alert className="mb-4 bg-muted/50 py-2 px-3">
-              <Info className="h-4 w-4 text-muted-foreground" />
-              <AlertDescription className="text-xs flex items-center justify-between w-full ml-2">
-                <span className="text-muted-foreground">
-                  Demo: teste@adapta.org
-                </span>
-                <Button
-                  type="button"
-                  variant="link"
-                  className="h-auto p-0 text-xs font-medium"
-                  onClick={fillDemoCredentials}
-                >
-                  Preencher
-                </Button>
-              </AlertDescription>
-            </Alert>
+            <div className="mb-4 flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2">
+              <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1 text-xs text-muted-foreground">
+                Demo: teste@adapta.org
+              </span>
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-xs font-medium"
+                onClick={fillDemoCredentials}
+              >
+                Preencher
+              </Button>
+            </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-4">
             {isSignUp && (
