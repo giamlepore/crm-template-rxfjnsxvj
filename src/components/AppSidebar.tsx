@@ -19,6 +19,7 @@ import {
   FileText,
   Settings,
   ShieldCheck,
+  Clock,
 } from 'lucide-react'
 import { useLocation, Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -52,6 +53,12 @@ export function AppSidebar() {
       icon: CheckSquare,
       label: 'Tarefas',
       path: '/tasks',
+      roles: ['admin', 'gerente', 'vendedor'],
+    },
+    {
+      icon: Clock,
+      label: 'Prazos',
+      path: '/deadlines',
       roles: ['admin', 'gerente', 'vendedor'],
     },
     {

@@ -17,6 +17,7 @@ import Login from './pages/Login'
 import LandingPage from './pages/LandingPage'
 import Layout from './components/Layout'
 import Settings from './pages/Settings'
+import Deadlines from './pages/Deadlines'
 import { ThemeProvider } from '@/components/theme-provider'
 
 const App = () => (
@@ -45,6 +46,7 @@ const App = () => (
                   <Route path="/proposals" element={<Proposals />} />
                   <Route path="/users" element={<Users />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/deadlines" element={<Deadlines />} />
                 </Route>
               </Route>
 
