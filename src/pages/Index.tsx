@@ -74,12 +74,15 @@ export default function Index() {
 
     const conversionRate = totalLeads > 0 ? (wonCount / totalLeads) * 100 : 0
 
-    const estimatedRevenue = wonLeads.reduce((acc, lead) => {
-      const approvedProposals = lead.proposals.filter(
-        (p) => p.status === 'Aprovada',
+    // Consider all active leads (not lost) for estimated revenue
+    const activeLeads = leads.filter((l) => l.status !== 'Fechado Perdido')
+
+    const estimatedRevenue = activeLeads.reduce((acc, lead) => {
+      // Sum all valid proposals values for this lead (excluding explicitly rejected ones)
+      const validProposals = lead.proposals.filter(
+        (p) => p.status !== 'Rejeitada' && p.status !== 'Recusada',
       )
-      // Sum all approved proposals values for this lead
-      const leadRevenue = approvedProposals.reduce(
+      const leadRevenue = validProposals.reduce(
         (sum, p) => sum + (p.valor || 0),
         0,
       )
@@ -267,7 +270,7 @@ export default function Index() {
               {formatCompactCurrency(metrics.estimatedRevenue)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Total acumulado em contratos fechados
+              Valor total no pipeline de vendas
             </p>
           </CardContent>
         </Card>
