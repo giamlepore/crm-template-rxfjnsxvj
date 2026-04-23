@@ -1,4 +1,5 @@
-import { Search, Bell, Mail, User, LogOut } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Search, Bell, Mail, LogOut } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { SidebarTrigger } from '@/components/ui/sidebar'
@@ -11,12 +12,79 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAuth } from '@/context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 export function AppHeader() {
   const { user, signOut, role } = useAuth()
   const navigate = useNavigate()
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (data && !error) {
+        setNotifications(data)
+        setUnreadCount(data.filter((n: any) => !n.read).length)
+      }
+    }
+
+    fetchNotifications()
+
+    const subscription = supabase
+      .channel('notifications_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchNotifications()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [user])
+
+  const handleOpenNotifications = async (open: boolean) => {
+    if (open && unreadCount > 0) {
+      const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id)
+
+      // Atualização otimista
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+      setUnreadCount(0)
+
+      if (unreadIds.length > 0) {
+        await supabase
+          .from('notifications')
+          .update({ read: true })
+          .in('id', unreadIds)
+      }
+    }
+  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -37,14 +105,62 @@ export function AppHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2 md:gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative rounded-full hover:bg-muted/60"
-        >
-          <Bell className="h-5 w-5 text-muted-foreground" />
-          <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
-        </Button>
+        <Popover onOpenChange={handleOpenNotifications}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative rounded-full hover:bg-muted/60"
+            >
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border border-white"></span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 p-0" align="end">
+            <div className="flex items-center justify-between px-4 py-3 border-b">
+              <h4 className="font-semibold text-sm">Notificações</h4>
+              {unreadCount > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {unreadCount} não lidas
+                </span>
+              )}
+            </div>
+            <ScrollArea className="h-[300px]">
+              {notifications.length === 0 ? (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  Nenhuma notificação
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification.id}
+                      className={cn(
+                        'flex flex-col gap-1 p-4 border-b last:border-0 hover:bg-muted/50 transition-colors',
+                        !notification.read && 'bg-muted/10',
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-medium text-sm">
+                          {notification.title}
+                        </span>
+                      </div>
+                      <span className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                        {notification.message}
+                      </span>
+                      <span className="text-xs text-muted-foreground/70 mt-1.5">
+                        {new Date(notification.created_at).toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+
         <Button
           variant="ghost"
           size="icon"
@@ -84,9 +200,9 @@ export function AppHeader() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Perfil</DropdownMenuItem>
-            <DropdownMenuItem>Empresa</DropdownMenuItem>
-            <DropdownMenuItem>Configurações</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
+              Perfil
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
