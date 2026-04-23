@@ -109,26 +109,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return
 
-    const channel = supabase
-      .channel('user_updates')
-      .on(
+    const channel = supabase.channel('user_updates').on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${user.id}`,
+      },
+      () => {
+        fetchUserProfile(user.id).then((r) => setRole(r))
+      },
+    )
+
+    if (organizationId) {
+      channel.on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'users',
-          filter: `id=eq.${user.id}`,
+          table: 'organizations',
+          filter: `id=eq.${organizationId}`,
         },
         () => {
           fetchUserProfile(user.id).then((r) => setRole(r))
         },
       )
-      .subscribe()
+    }
+
+    channel.subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, fetchUserProfile])
+  }, [user, organizationId, fetchUserProfile])
 
   const signUp = async (
     email: string,
