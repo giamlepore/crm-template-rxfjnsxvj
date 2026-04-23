@@ -15,6 +15,8 @@ interface AuthContextType {
   role: 'vendedor' | 'gerente' | 'admin' | null
   organizationId: string | null
   organizationName: string | null
+  name: string | null
+  avatarUrl: string | null
   signUp: (
     email: string,
     password: string,
@@ -43,13 +45,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   )
   const [organizationId, setOrganizationId] = useState<string | null>(null)
   const [organizationName, setOrganizationName] = useState<string | null>(null)
+  const [name, setName] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   const fetchUserProfile = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('users')
-        .select('role, organization_id, organizations(name)')
+        .select('role, organization_id, name, avatar_url, organizations(name)')
         .eq('id', userId)
         .single()
 
@@ -60,6 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       setOrganizationId(data?.organization_id)
       setOrganizationName((data?.organizations as any)?.name || null)
+      setName(data?.name || null)
+      setAvatarUrl((data as any)?.avatar_url || null)
       return data?.role as 'vendedor' | 'gerente' | 'admin'
     } catch (error) {
       console.error('Unexpected error fetching profile:', error)
@@ -81,6 +87,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setRole(null)
         setOrganizationId(null)
         setOrganizationName(null)
+        setName(null)
+        setAvatarUrl(null)
       }
 
       if (event === 'INITIAL_SESSION') {
@@ -177,6 +185,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null)
       setOrganizationId(null)
       setOrganizationName(null)
+      setName(null)
+      setAvatarUrl(null)
     }
     return { error }
   }
@@ -187,6 +197,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     role,
     organizationId,
     organizationName,
+    name,
+    avatarUrl,
     signUp,
     signIn,
     signOut,

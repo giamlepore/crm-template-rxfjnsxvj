@@ -24,7 +24,7 @@ import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 export function AppHeader() {
-  const { user, signOut, role } = useAuth()
+  const { user, signOut, role, name, avatarUrl } = useAuth()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState<any[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -176,11 +176,17 @@ export function AppHeader() {
             >
               <Avatar className="h-9 w-9 border border-border">
                 <AvatarImage
-                  src={`https://img.usecurling.com/ppl/thumbnail?gender=male&seed=${user?.id}`}
-                  alt="User"
+                  src={
+                    avatarUrl ||
+                    `https://img.usecurling.com/ppl/thumbnail?gender=male&seed=${user?.id}`
+                  }
+                  alt={name || 'User'}
+                  className="object-cover"
                 />
                 <AvatarFallback>
-                  {user?.email?.substring(0, 2).toUpperCase()}
+                  {name
+                    ? name.substring(0, 2).toUpperCase()
+                    : user?.email?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -189,7 +195,7 @@ export function AppHeader() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.email?.split('@')[0]}
+                  {name || user?.email?.split('@')[0]}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}

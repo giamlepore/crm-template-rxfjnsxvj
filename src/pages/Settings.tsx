@@ -12,6 +12,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Upload, Loader2 } from 'lucide-react'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -19,10 +21,14 @@ export default function Settings() {
 
   const [savingProfile, setSavingProfile] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   // Profile
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+
+  // Password
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
@@ -31,14 +37,66 @@ export default function Settings() {
       setEmail(user.email || '')
       supabase
         .from('users')
-        .select('name')
+        .select('name, avatar_url')
         .eq('id', user.id)
         .single()
         .then(({ data }) => {
-          if (data && data.name) setName(data.name)
+          if (data) {
+            if (data.name) setName(data.name)
+            if ((data as any).avatar_url) setAvatarUrl((data as any).avatar_url)
+          }
         })
     }
   }, [user])
+
+  const handleUploadAvatar = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    try {
+      setUploadingAvatar(true)
+      if (!event.target.files || event.target.files.length === 0) {
+        return
+      }
+
+      const file = event.target.files[0]
+      const fileExt = file.name.split('.').pop()
+      const filePath = `${user?.id}-${Math.random()}.${fileExt}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: publicUrlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath)
+
+      const newAvatarUrl = publicUrlData.publicUrl
+      setAvatarUrl(newAvatarUrl)
+
+      // Update users table
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: newAvatarUrl } as any)
+        .eq('id', user!.id)
+
+      if (updateError) throw updateError
+
+      toast({
+        title: 'Foto atualizada',
+        description: 'Sua foto de perfil foi atualizada com sucesso.',
+      })
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar foto',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const handleUpdateProfile = async () => {
     if (!user) return
@@ -135,36 +193,89 @@ export default function Settings() {
           <CardHeader>
             <CardTitle>Perfil do Usuário</CardTitle>
             <CardDescription>
-              Gerencie suas informações pessoais.
+              Gerencie suas informações pessoais e foto de perfil.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 max-w-xl">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Seu nome"
-              />
+          <CardContent className="space-y-6 max-w-xl">
+            {/* Avatar Section */}
+            <div className="flex flex-col space-y-3">
+              <Label>Foto de Perfil</Label>
+              <div className="flex items-center gap-6">
+                <Avatar className="h-20 w-20 border border-border">
+                  <AvatarImage
+                    src={
+                      avatarUrl ||
+                      `https://img.usecurling.com/ppl/thumbnail?gender=male&seed=${user?.id}`
+                    }
+                    className="object-cover"
+                  />
+                  <AvatarFallback className="text-2xl">
+                    {name
+                      ? name.substring(0, 2).toUpperCase()
+                      : user?.email?.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      id="avatar-upload"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleUploadAvatar}
+                      disabled={uploadingAvatar}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        document.getElementById('avatar-upload')?.click()
+                      }
+                      disabled={uploadingAvatar}
+                      className="gap-2"
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                      {uploadingAvatar ? 'Enviando...' : 'Alterar foto'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Recomendado: Imagem quadrada (JPG, PNG). Máx: 2MB.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@email.com"
-              />
-              <p className="text-[0.8rem] text-muted-foreground">
-                Ao alterar seu e-mail, pode ser necessário confirmar o novo
-                endereço.
-              </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome completo</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                />
+                <p className="text-[0.8rem] text-muted-foreground">
+                  Ao alterar seu e-mail, pode ser necessário confirmar o novo
+                  endereço.
+                </p>
+              </div>
+              <Button onClick={handleUpdateProfile} disabled={savingProfile}>
+                {savingProfile ? 'Salvando...' : 'Salvar informações'}
+              </Button>
             </div>
-            <Button onClick={handleUpdateProfile} disabled={savingProfile}>
-              {savingProfile ? 'Salvando...' : 'Salvar informações'}
-            </Button>
           </CardContent>
         </Card>
 
